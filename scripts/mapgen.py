@@ -8,6 +8,7 @@ import curses
 import math
 import numpy as np
 import sets
+import tiled
 
 global logger
 
@@ -44,14 +45,11 @@ class Layer(object):
   def generate(self):
     self.data = np.zeros((self.size[0], self.size[1]))
 
-  def display(self, i, j):
-    z = self.data[j,i]
-    return (str(z))
-
 class Elevation(Layer):
   def __init__(self, size, name = "elevation"):
     self.angle = math.radians(0.0)
     self.scale = (1.0, 1.0)
+    self.base = 0
     super(Elevation, self).__init__(size, name)
 
   def generate(self):
@@ -62,12 +60,9 @@ class Elevation(Layer):
         u = rotate(u,-self.angle)
         u[0] *= 1.0/self.scale[0]
         u[1] *= 1.0/self.scale[1]
-        self.data[j,i] = noise.pnoise2(u[0], u[1])
-
-  def display(self, i, j):
-    z = self.data[j,i]
-    z = int((z+1.0) * 5.0)
-    return ('..', curses.color_pair(z))
+        z = noise.pnoise2(u[0], u[1], 4, base=self.base)
+        #self.data[j,i] = int((z+1)*5)
+        self.data[j,i] = z
 
 class Contour(Layer):
   def __init__(self, elevation, val, name = "contour"):
@@ -82,12 +77,6 @@ class Contour(Layer):
         local = self.elevation.local_area(i, j)
         if self.val > local.min() and self.val < local.max():
           self.data[j,i] = 1
-
-  def display(self, i, j):
-    if self.data[j,i]:
-      return ('..', curses.color_pair(0))
-    else:
-      return None
 
 class Path(Layer):
   def __init__(self, elevation, start, end, name = "path"):
@@ -122,15 +111,15 @@ class Path(Layer):
 
   def dist_between(self, p1, p2):
     z1 = self.elevation.data[p1[1],p1[0]]
-    z1 = int((1.0+z1)*5.0)
+    #z1 = int((1.0+z1)*5.0)
     z2 = self.elevation.data[p2[1],p2[0]]
-    z2 = int((1.0+z2)*5.0)
+    #z2 = int((1.0+z2)*5.0)
     path = self.data[p2[1],p2[0]]
-    d = math.sqrt(float(p1[0]-p2[0])**2 + float(p1[1]-p2[1])**2 + 10*float(z2-z1)**2)
-    if path == 1:
-      return d*0.75
-    else:
-      return d
+    d = math.sqrt(float(p1[0]-p2[0])**2 + float(p1[1]-p2[1])**2 + 50*float(z2-z1)**2)
+    # if path == 1:
+    #   return d*0.75
+    # else:
+    return d
 
   def heuristic_cost_estimate(self, start, end):
     return self.dist_between(start, end)
@@ -185,77 +174,10 @@ class Path(Layer):
 
     return False
 
-  def display(self, i, j):
-    z = self.data[j,i]
-    if z == 1:
-      x,c = self.elevation.display(i,j)
-      return ('@ ', c)
-    elif z == 2:
-      x,c = self.elevation.display(i,j)
-      return ('X ', c)
-    else:
-      return None
-
-class World(object):
-  def __init__(self, size):
-    self.layers = []
-    self.set_size(size)
-    self.generate()
-
-  def set_size(self, size):
-    self.size = size
-    for layer in self.layers:
-      layer.set_size(size)
-
-  def generate(self):
-    for layer in self.layers:
-      layer.generate()
-
-def print_world(screen, world):
-  curses.start_color()
-  curses.use_default_colors()
-  for i in range(1, 11):
-    r,g,b = ((i-1)*100, (i-1)*100, (i-1)*100)
-    if i < 3:
-      b += 300 * i
-    elif i == 3:
-      r += 500
-      g += 500
-    elif i<6:
-      g += 25 * i
-    curses.init_color(i, r, g, b)
-  for i in range(0, curses.COLORS):
-    curses.init_pair(i, 0, i)
-
-  (height,width) = screen.getmaxyx()
-  min_x = 0
-  min_y = 0
-  max_x = min(width/2, world.size[0])
-  max_y = min(height-1, world.size[1])
-  logger.info("ok, drawing from (%d,%d) -> (%d,%d)" % (min_x, min_y, max_x, max_y))
-
-  x = 0
-  for i in range(min_x, max_x):
-    for j in range(min_y, max_y):
-      for layer in world.layers:
-        v = layer.display(i,j)
-        if v == None:
-          pass
-        elif len(v) == 1:
-          screen.addstr(j, x, v[0])
-        elif len(v) == 2:
-          screen.addstr(j, x, v[0], v[1])
-    x += 2
-
-def main(scr):
-  scr.clear()
-
-  size = (50, 50)
-  world = World(size)
-  
+def main(size, scale, angle):
   elevation = Elevation(size)
-  elevation.scale = (20.0, 8.0)
-  elevation.angle = math.radians(-30.0)
+  elevation.scale = scale
+  elevation.angle = angle
   elevation.generate()
 
   # random points of interest within the map
@@ -266,30 +188,87 @@ def main(scr):
     for j in range(int(size[1]*pad), int(size[1]*(1.0-pad)), int(size[1]*inc)):
       poi.append((int(i),int(j)))
   shuffle(poi)
-  poi = poi[0:2]
+  poi = poi[0:3]
 
   # random points of interest to the n, s, e and w
-  poi += [
+  edges = [
     (size[0]/2, 0),
     (size[0]/2, size[1]-1),
     (0, size[1]/2),
     (size[0]-1, size[1]/2)
   ]
+  shuffle(edges)
+  poi += edges[:3]
 
+  # connect each poi to closest non-visited poi
   path = Path(elevation, (0,0), (0,0))
-  for i in range(0,len(poi)-1):
-    for j in range(i+1,len(poi)):
-      path.start = poi[i]
-      path.end = poi[j]
-      path.generate()
+  visited = sets.Set()
+  nonvisited = sets.Set([i for i in range(len(poi))])
+  while len(nonvisited) > 0:
+    i = nonvisited.pop()
+    closest = -1
+    mind = 1e9
+    visited.add(i)
+    for j in nonvisited:
+      if i != j:
+        d = math.sqrt((poi[i][0]-poi[j][0])**2 + (poi[i][1]-poi[j][1])**2)
+        if closest == -1:
+          closest = j
+          mind = d
+        else:
+          if d < mind:
+            mind = d
+            closest = j
+    path.start = poi[i]
+    path.end = poi[closest]
+    path.generate()
 
-  world.layers.append(elevation)
-  world.layers.append(path)
+  t = tiled.Tiled()
+  t.width = size[0]
+  t.height = size[1]
+  ts = tiled.Tileset()
+  ts.image = "tiles.png"
+  ts.columns = 20
+  ts.imageheight = 20*32
+  ts.imagewidth = 20*32
+  ts.tilecount = 20*20
+  t.tilesets += [ts]
 
-  print_world(scr, world)
-  scr.refresh()
-  scr.getch()
+  # make the elevation layer
+  tl = tiled.TileLayer()
+  tl.name = "elevation"
+  tl.width = size[0]
+  tl.height = size[1]
+  data = elevation.data.flatten()
+  min_z = data.min()
+  max_z = data.max()
+  tl.data = [1+int(7*(z-min_z)/(max_z-min_z)) for z in data.tolist()]
+  t.layers += [tl]
+
+  # make the paths layer
+  pl = tiled.TileLayer()
+  pl.name = "paths"
+  pl.width = size[0]
+  pl.height = size[1]
+  data = path.data.flatten().tolist()
+  for i in range(len(data)):
+    if data[i] != 0:
+      pl.data.append(2)
+    else:
+      pl.data.append(0)
+  t.layers += [pl]
+
+  data = t.to_json()
+
+  f = open("map.json", "w")
+  json.dump(data, f, sort_keys=True, indent=2)
+  f.close()
 
 if __name__ == '__main__':
   init_log()
-  curses.wrapper(main)
+
+  scale = (125.0, 50.0)
+  angle = math.radians(-30.0)
+  size = (100, 100)
+
+  main(size, scale, angle)

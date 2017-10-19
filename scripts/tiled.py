@@ -88,11 +88,11 @@ class Tileset(object):
   def __init__(self):
     self.columns = 8
     self.firstgid = 1
-    self.image = "cavetiles.png"
+    self.image = "tiles.png"
     self.imageheight = 192
     self.imagewidth = 256
     self.margin = 0
-    self.name = "cavetiles"
+    self.name = "tiles"
     self.spacing = 0
     self.tilecount = 48
     self.tileheight = 32
