@@ -90,13 +90,13 @@ class Path(Layer):
     x,y = pos
     return [
       (x-1, y-1),
-      (x, y-1),
+      (x+0, y-1),
       (x+1, y-1),
       (x-1, y),
       (x+1, y),
       (x-1, y+1),
-      (x, y+1),
-      (x+1, y+1)
+      (x+0, y+1),
+      (x+1, y+1),
     ]
 
   def lowest_score(self, openSet, fScore):
@@ -115,11 +115,11 @@ class Path(Layer):
     z2 = self.elevation.data[p2[1],p2[0]]
     #z2 = int((1.0+z2)*5.0)
     path = self.data[p2[1],p2[0]]
-    d = math.sqrt(float(p1[0]-p2[0])**2 + float(p1[1]-p2[1])**2 + 50*float(z2-z1)**2)
-    # if path == 1:
-    #   return d*0.75
-    # else:
-    return d
+    d = math.sqrt(float(p1[0]-p2[0])**2 + float(p1[1]-p2[1])**2 + (100000.0*float(z2-z1))**2)
+    if path == 1:
+      return d*0.75
+    else:
+      return d
 
   def heuristic_cost_estimate(self, start, end):
     return self.dist_between(start, end)
@@ -192,13 +192,13 @@ def main(size, scale, angle):
 
   # random points of interest to the n, s, e and w
   edges = [
-    (size[0]/2, 0),
-    (size[0]/2, size[1]-1),
-    (0, size[1]/2),
-    (size[0]-1, size[1]/2)
+    (size[0]/2, 3),
+    (size[0]/2, size[1]-3),
+    (3, size[1]/2),
+    (size[0]-3, size[1]/2)
   ]
   shuffle(edges)
-  poi += edges[:3]
+  poi = edges + poi
 
   # connect each poi to closest non-visited poi
   path = Path(elevation, (0,0), (0,0))
@@ -219,9 +219,11 @@ def main(size, scale, angle):
           if d < mind:
             mind = d
             closest = j
-    path.start = poi[i]
-    path.end = poi[closest]
-    path.generate()
+    if closest != -1:
+      path.start = poi[i]
+      path.end = poi[closest]
+      print "connecting %s to %s" % (str(path.start), str(path.end))
+      path.generate()
 
   t = tiled.Tiled()
   t.width = size[0]
