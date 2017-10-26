@@ -1,5 +1,6 @@
 #/bin/bash python
 
+import random
 from random import shuffle
 import logging
 import json
@@ -89,14 +90,14 @@ class Path(Layer):
   def neighbors(self, pos):
     x,y = pos
     return [
-      (x-1, y-1),
+      #(x-1, y-1),
       (x+0, y-1),
-      (x+1, y-1),
+      #(x+1, y-1),
       (x-1, y),
       (x+1, y),
-      (x-1, y+1),
+      #(x-1, y+1),
       (x+0, y+1),
-      (x+1, y+1),
+      #(x+1, y+1),
     ]
 
   def lowest_score(self, openSet, fScore):
@@ -174,6 +175,12 @@ class Path(Layer):
 
     return False
 
+def tile_id(x,y):
+  return y*16+x+1
+
+def tile4_idx(up, down, left, right):
+  return (int)(up) + ((int)(down)<<1) + ((int)(left)<<2) + ((int)(right)<<3)
+
 def main(size, scale, angle):
   elevation = Elevation(size)
   elevation.scale = scale
@@ -188,7 +195,7 @@ def main(size, scale, angle):
     for j in range(int(size[1]*pad), int(size[1]*(1.0-pad)), int(size[1]*inc)):
       poi.append((int(i),int(j)))
   shuffle(poi)
-  poi = poi[0:3]
+  poi = poi[0:5]
 
   # random points of interest to the n, s, e and w
   edges = [
@@ -229,22 +236,45 @@ def main(size, scale, angle):
   t.width = size[0]
   t.height = size[1]
   ts = tiled.Tileset()
-  ts.image = "tiles.png"
-  ts.columns = 20
-  ts.imageheight = 20*32
-  ts.imagewidth = 20*32
-  ts.tilecount = 20*20
+  ts.image = "woodland_ground.png"
+  ts.name = "woodland_ground"
+  ts.columns = 16
+  ts.imageheight = 16*32
+  ts.imagewidth = 16*32
+  ts.tilecount = 16*16
   t.tilesets += [ts]
 
-  # make the elevation layer
+  # some tile indexes for our woodland tileset
+  grass = [1, 17, 33, 49, 65]
+
+  trail = {}
+  # up down left right
+  trail[tile4_idx(0,0,0,0)] = 0
+  trail[tile4_idx(1,0,0,0)] = tile_id(5,8)
+  trail[tile4_idx(0,1,0,0)] = tile_id(4,3)
+  trail[tile4_idx(1,1,0,0)] = tile_id(1,1)
+  trail[tile4_idx(0,0,1,0)] = tile_id(1,8)
+  trail[tile4_idx(1,0,1,0)] = tile_id(2,1)
+  trail[tile4_idx(0,1,1,0)] = tile_id(2,0)
+  trail[tile4_idx(1,1,1,0)] = tile_id(3,3)
+  trail[tile4_idx(0,0,0,1)] = tile_id(0,8)
+  trail[tile4_idx(1,0,0,1)] = tile_id(2,3)
+  trail[tile4_idx(0,1,0,1)] = tile_id(2,2)
+  trail[tile4_idx(1,1,0,1)] = tile_id(1,3)
+  trail[tile4_idx(0,0,1,1)] = tile_id(1,0)
+  trail[tile4_idx(1,0,1,1)] = tile_id(1,4)
+  trail[tile4_idx(0,1,1,1)] = tile_id(3,2)
+  trail[tile4_idx(1,1,1,1)] = tile_id(1,2)
+  print trail
+
+  # fill with random grass
   tl = tiled.TileLayer()
   tl.name = "elevation"
   tl.width = size[0]
   tl.height = size[1]
-  data = elevation.data.flatten()
-  min_z = data.min()
-  max_z = data.max()
-  tl.data = [1+int(7*(z-min_z)/(max_z-min_z)) for z in data.tolist()]
+  tl.data = []
+  for x in range(size[0]*size[1]):
+    tl.data.append(random.choice(grass))
   t.layers += [tl]
 
   # make the paths layer
@@ -252,12 +282,21 @@ def main(size, scale, angle):
   pl.name = "paths"
   pl.width = size[0]
   pl.height = size[1]
-  data = path.data.flatten().tolist()
-  for i in range(len(data)):
-    if data[i] != 0:
-      pl.data.append(2)
-    else:
-      pl.data.append(0)
+  pl.data = []
+  for y in range(size[1]):
+    for x in range(size[0]):
+      val = 0
+      if (x > 0 and y > 0 and
+          x < size[0]-1 and y < size[1]-1 and
+          path.data[y,x] != 0):
+        up = (path.data[y-1,x] != 0)
+        down = (path.data[y+1,x] != 0)
+        left = (path.data[y,x-1] != 0)
+        right = (path.data[y,x+1] != 0)
+        idx = tile4_idx(up,down,left,right)
+        if trail.has_key(idx):
+          val = trail[idx]
+      pl.data.append(val)
   t.layers += [pl]
 
   data = t.to_json()

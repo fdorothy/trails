@@ -25,6 +25,7 @@ export default {
   images: {
     fire: 'assets/images/fire.png',
     tiles: 'assets/images/tiles.png',
+    woodland_ground: 'assets/images/woodland_ground.png',
     starfield: 'assets/images/starfield.png',
   },
   // playground map
