@@ -181,6 +181,16 @@ def tile_id(x,y):
 def tile4_idx(up, down, left, right):
   return (int)(up) + ((int)(down)<<1) + ((int)(left)<<2) + ((int)(right)<<3)
 
+# indexes organized like..
+#  0 1 2
+#  3   4
+#  5 6 7
+def tile8_idx(vals):
+  acc = 0
+  for i in range(len(vals)):
+    acc += (int)(vals[i])<<i
+  return acc
+
 def main(size, scale, angle):
   elevation = Elevation(size)
   elevation.scale = scale
@@ -246,6 +256,14 @@ def main(size, scale, angle):
 
   # some tile indexes for our woodland tileset
   grass = [1, 17, 33, 49, 65]
+  grass_decor = {
+    1: [tile_id(5,7)],
+    2: [tile_id(3,8),tile_id(4,8)],
+    3: [tile_id(12,0),tile_id(13,0)],
+    4: [tile_id(14,0),tile_id(15,0)],
+    5: [tile_id(12,1),tile_id(13,1)],
+    6: [tile_id(14,1),tile_id(15,1)]
+  }
 
   trail = {}
   # up down left right
@@ -265,7 +283,38 @@ def main(size, scale, angle):
   trail[tile4_idx(1,0,1,1)] = tile_id(1,4)
   trail[tile4_idx(0,1,1,1)] = tile_id(3,2)
   trail[tile4_idx(1,1,1,1)] = tile_id(1,2)
-  print trail
+
+  water = {}
+  # up down left right
+  water[tile4_idx(1,0,1,0)] = tile_id(7,6)
+  water[tile4_idx(0,1,1,0)] = tile_id(7,4)
+  water[tile4_idx(1,1,1,0)] = tile_id(7,5)
+  water[tile4_idx(1,0,0,1)] = tile_id(5,6)
+  water[tile4_idx(0,1,0,1)] = tile_id(5,4)
+  water[tile4_idx(1,1,0,1)] = tile_id(5,5)
+  water[tile4_idx(1,0,1,1)] = tile_id(6,6)
+  water[tile4_idx(0,1,1,1)] = tile_id(6,4)
+  water[tile4_idx(1,1,1,1)] = tile_id(6,5)
+  water_ul = tile_id(5,2)
+  water_ur = tile_id(6,2)
+  water_dl = tile_id(5,3)
+  water_dr = tile_id(6,3)
+
+  # grass decoration layer (flowers and such)
+  grass_decor_layer = tiled.TileLayer()
+  grass_decor_layer.name = "grass_decor"
+  grass_decor_layer.width = size[0]
+  grass_decor_layer.height = size[1]
+  grass_decor_layer.data = []
+
+  # fill in the steppes (hills and water)
+  steppes = elevation.data.copy()
+  min_z = steppes.min()
+  max_z = steppes.max()
+  for x in range(size[0]):
+    for y in range(size[1]):
+      z = steppes[y,x]
+      steppes[y,x] = 1+int(5*(z-min_z)/(max_z-min_z))
 
   # fill with random grass
   tl = tiled.TileLayer()
@@ -273,9 +322,43 @@ def main(size, scale, angle):
   tl.width = size[0]
   tl.height = size[1]
   tl.data = []
-  for x in range(size[0]*size[1]):
-    tl.data.append(random.choice(grass))
-  t.layers += [tl]
+  prob = 0.1
+  for y in range(size[1]):
+    for x in range(size[0]):
+      tl.data.append(random.choice(grass))
+      if random.randint(0,100)/100.0 < prob:
+        elev = steppes[y,x]
+        grass_decor_layer.data.append(random.choice(grass_decor[int(elev)]))
+      else:
+        grass_decor_layer.data.append(0)
+  t.layers += [tl,grass_decor_layer]
+
+  # fill in the water
+  for y in range(size[1]):
+    for x in range(size[0]):
+      if (x > 0 and y > 0 and
+          x < size[0]-1 and y < size[1]-1 and
+          steppes[y,x] == 1):
+        vals = [
+          steppes[y-1,x+0]==1,
+          steppes[y+1,x+0]==1,
+          steppes[y+0,x-1]==1,
+          steppes[y+0,x+1]==1,
+        ]
+        idx = tile4_idx(*vals)
+        print vals, " -> ", idx
+        pos = x+y*size[0]
+        if water.has_key(idx):
+          tl.data[pos] = water[idx]
+        if tl.data[pos] == water[15]:
+          if steppes[y-1,x-1]!=1:
+            tl.data[pos] = water_ul
+          elif steppes[y-1,x+1]!=1:
+            tl.data[pos] = water_ur
+          elif steppes[y+1,x-1]!=1:
+            tl.data[pos] = water_dl
+          elif steppes[y+1,x+1]!=1:
+            tl.data[pos] = water_dr
 
   # make the paths layer
   pl = tiled.TileLayer()
@@ -296,6 +379,7 @@ def main(size, scale, angle):
         idx = tile4_idx(up,down,left,right)
         if trail.has_key(idx):
           val = trail[idx]
+          grass_decor_layer.data[x+y*size[0]] = 0
       pl.data.append(val)
   t.layers += [pl]
 
