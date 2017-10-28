@@ -463,6 +463,8 @@ def main(size, scale, angle):
     obj.y = (edge[1]-5)*32
     obj.width = 10*32
     obj.height = 10*32
+    obj.properties["tooltip"] = "follow this path?"
+    obj.propertytypes["tooltip"] = "string"
     obj.myid = objid
     exits.objects.append(obj)
     objid += 1

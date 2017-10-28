@@ -211,8 +211,6 @@ export default class extends Phaser.State {
       var tooltip = y.props.properties.tooltip;
       if (tooltip != null) {
 	this.tooltip.text = tooltip;
-	this.tooltip.x = (y.left + y.right) / 2.0;
-	this.tooltip.y = y.bottom - 64;
       }
     }
   }
@@ -270,6 +268,8 @@ export default class extends Phaser.State {
     
     // clear the tooltip and message texts
     this.tooltip.text = '';
+    this.tooltip.x = this.player.x;
+    this.tooltip.y = this.player.y - 32;
 
     if (this.itemPickupCooldown > 0.0)
       this.itemPickupCooldown -= dt;
