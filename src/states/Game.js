@@ -303,21 +303,21 @@ export default class extends Phaser.State {
       this.state.start("GameOver");
     }, null, this);
 
-    this.player.stop();
     if (this.cursor.left.isDown) {
       this.player.moveLeft();
     }
     else if (this.cursor.right.isDown) {
       this.player.moveRight();
-    }
-
+    } else
+      this.player.stopLR();
+    
     if (this.cursor.up.isDown) {
       this.player.moveUp();
     }
     else if (this.cursor.down.isDown) {
       this.player.moveDown();
-    }
-
+    } else
+      this.player.stopUD();
   }
 
   updateMessage(dt) {

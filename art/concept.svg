@@ -16,7 +16,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="concept.svg">
+   sodipodi:docname="concept.svg"
+   inkscape:export-filename="/Users/fredricdorothy/personal/games/trails/master/assets/images/map.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <defs
      id="defs4">
     <marker
@@ -76,15 +79,15 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2"
-     inkscape:cx="333.59674"
-     inkscape:cy="318.47577"
+     inkscape:cx="353.84674"
+     inkscape:cy="278.47577"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1920"
-     inkscape:window-height="1031"
+     inkscape:window-width="1440"
+     inkscape:window-height="775"
      inkscape:window-x="0"
-     inkscape:window-y="1"
+     inkscape:window-y="0"
      inkscape:window-maximized="1" />
   <metadata
      id="metadata7">
@@ -94,7 +97,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -1155,5 +1158,26 @@
        id="path6461"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccssc" />
+    <path
+       sodipodi:nodetypes="ccccccccc"
+       inkscape:connector-curvature="0"
+       id="path4324"
+       d="m 526.69553,857.37126 2.19296,62.98981 -1.81428,66.51124 59.94097,-1.36994 59.06007,2.69836 -3.04437,-67.33855 2.95859,-62.85488 -56.49137,3.21213 z"
+       style="fill:#e3e1b3;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       inkscape:export-filename="/Users/fredricdorothy/personal/games/trails/master/assets/images/map.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       sodipodi:nodetypes="ccc"
+       inkscape:connector-curvature="0"
+       id="path4326"
+       d="M 529,921.8622 587.2996,919.74088 643,921.8622"
+       style="fill:none;fill-rule:evenodd;stroke:#d2ce83;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       sodipodi:nodetypes="ccc"
+       inkscape:connector-curvature="0"
+       id="path4328"
+       d="M 588.85355,861.74608 586.7131,919.52643 588,984.3622"
+       style="fill:#000000;fill-opacity:0;fill-rule:evenodd;stroke:#d2cf86;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
   </g>
 </svg>

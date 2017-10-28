@@ -5,7 +5,7 @@ export default {
   player: {
     scale: 1.2,
     initialSpeed: 50,
-    targetSpeed: 150,
+    targetSpeed: 300,
     groundAccel: 200,
     groundDeaccel: 500
   },

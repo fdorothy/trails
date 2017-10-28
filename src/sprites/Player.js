@@ -85,11 +85,15 @@ export default class extends Phaser.Sprite {
     this.body.velocity.y = vy;
   }
 
-  stop() {
+  stopLR() {
     var dt = this.game.time.physicsElapsed;
     var vx = this.body.velocity.x;
-    var vy = this.body.velocity.y;
     this.body.velocity.x = this.slowdown(vx, dt);
+  }
+
+  stopUD() {
+    var dt = this.game.time.physicsElapsed;
+    var vy = this.body.velocity.y;
     this.body.velocity.y = this.slowdown(vy, dt);
   }
 

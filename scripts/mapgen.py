@@ -1,5 +1,8 @@
 #/bin/bash python
 
+from PIL import Image
+from PIL import ImageDraw
+
 import random
 from random import shuffle
 import logging
@@ -221,6 +224,7 @@ def main(size, scale, angle):
   path = Path(elevation, (0,0), (0,0))
   visited = sets.Set()
   nonvisited = sets.Set([i for i in range(len(poi))])
+  connections = []
   while len(nonvisited) > 0:
     i = nonvisited.pop()
     closest = -1
@@ -239,6 +243,7 @@ def main(size, scale, angle):
     if closest != -1:
       path.start = poi[i]
       path.end = poi[closest]
+      connections.append((poi[i], poi[closest]))
       print "connecting %s to %s" % (str(path.start), str(path.end))
       path.generate()
 
@@ -382,6 +387,67 @@ def main(size, scale, angle):
           grass_decor_layer.data[x+y*size[0]] = 0
       pl.data.append(val)
   t.layers += [pl]
+
+  # make some sign posts / structures
+  sl = tiled.TileLayer()
+  sl.name = "signs"
+  sl.width = size[0]
+  sl.height = size[1]
+  sl.data = [0]*(size[0]*size[1])
+  marker = [
+    tile_id(0,7),
+    tile_id(1,7),
+    tile_id(2,7),
+    tile_id(3,7),
+    tile_id(4,7),
+    tile_id(13,12)
+  ]
+  idx = 0
+  visited = sets.Set()
+  for c in connections:
+    for p in c:
+      if not p in visited:
+        offset_x = random.randint(-3,3)
+        offset_y = random.randint(-3,3)
+        sl.data[(p[0]+offset_x)+(p[1]+offset_y)*size[0]] = marker[idx]
+        idx=idx+1
+        if idx >= len(marker):
+          idx = 0
+        visited.add(p)
+  t.layers += [sl]
+
+  # make the minimap png
+  img = Image.open("../assets/images/map.png")
+  draw = ImageDraw.Draw(img)
+
+  color = (200, 200, 120, 255)
+  for y in range(3,img.height-3):
+    for x in range(3,img.width-3):
+      # if there is a path in this area then
+      # draw it on the minimap
+      x0 = x*size[0]/img.width
+      y0 = y*size[1]/img.height
+      z = steppes[y0,x0]
+      if (steppes[y0+1,x0] < z or
+          steppes[y0,x0+1] < z or
+          steppes[y0-1,x0] < z or
+          steppes[y0,x0-1] < z):
+        draw.point((x,y),color)
+
+  color = (0, 0, 0, 255)
+  for c in connections:
+    x0 = c[0][0]*img.width/size[0]
+    y0 = c[0][1]*img.height/size[1]
+    x1 = c[1][0]*img.width/size[0]
+    y1 = c[1][1]*img.height/size[1]
+    #draw.line([(x0,y0),(x1,y1)],color)
+    draw.line([(x0-2,y0-2),(x0+2,y0+2)],color)
+    draw.line([(x0+2,y0-2),(x0-2,y0+2)],color)
+
+    draw.line([(x1-2,y1-2),(x1+2,y1+2)],color)
+    draw.line([(x1+2,y1-2),(x1-2,y1+2)],color)
+
+  img.save("minimap.png", "PNG")
 
   data = t.to_json()
 
