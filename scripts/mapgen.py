@@ -202,7 +202,7 @@ def neighbors(x,y,data,width,height):
     data[y,min([width-1,x+1])]
   ]
 
-def main(size, scale, angle):
+def main(size, scale, angle, name):
   elevation = Elevation(size)
   elevation.scale = scale
   elevation.angle = angle
@@ -259,7 +259,7 @@ def main(size, scale, angle):
   t.width = size[0]
   t.height = size[1]
   ts = tiled.Tileset()
-  ts.image = "woodland_ground.png"
+  ts.image = "../images/woodland_ground.png"
   ts.name = "woodland_ground"
   ts.columns = 16
   ts.imageheight = 16*32
@@ -447,7 +447,7 @@ def main(size, scale, angle):
     draw.line([(x1-2,y1-2),(x1+2,y1+2)],color)
     draw.line([(x1+2,y1-2),(x1-2,y1+2)],color)
 
-  img.save("minimap.png", "PNG")
+  img.save("../assets/images/minimaps/%s.png" % name, "PNG")
 
   # setup rectangles for path exits on the corners
   exits = tiled.ObjectGroup()
@@ -470,12 +470,12 @@ def main(size, scale, angle):
     
 
   # set the minimap in the json file
-  t.properties["minimap"] = "assets/images/minimaps/sample.png"
+  t.properties["minimap"] = "assets/images/minimaps/%s.png" % name
   t.propertytypes["minimap"] = "string"
 
   data = t.to_json()
 
-  f = open("map.json", "w")
+  f = open("../assets/maps/%s.json" % name, "w")
   json.dump(data, f, sort_keys=True, indent=2)
   f.close()
 
@@ -486,4 +486,4 @@ if __name__ == '__main__':
   angle = math.radians(-30.0)
   size = (100, 100)
 
-  main(size, scale, angle)
+  main(size, scale, angle, "sample")
