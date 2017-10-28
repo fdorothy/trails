@@ -212,13 +212,13 @@ def main(size, scale, angle):
 
   # random points of interest to the n, s, e and w
   edges = [
-    (size[0]/2, 3),
-    (size[0]/2, size[1]-3),
-    (3, size[1]/2),
-    (size[0]-3, size[1]/2)
+    (size[0]/2, 3, "top"),
+    (size[0]/2, size[1]-3, "bottom"),
+    (3, size[1]/2, "left"),
+    (size[0]-3, size[1]/2, "right")
   ]
   shuffle(edges)
-  poi = edges + poi
+  poi = [(e[0], e[1]) for e in edges] + poi
 
   # connect each poi to closest non-visited poi
   path = Path(elevation, (0,0), (0,0))
@@ -323,7 +323,7 @@ def main(size, scale, angle):
 
   # fill with random grass
   tl = tiled.TileLayer()
-  tl.name = "elevation"
+  tl.name = "ground"
   tl.width = size[0]
   tl.height = size[1]
   tl.data = []
@@ -457,7 +457,7 @@ def main(size, scale, angle):
   objid = 1
   for edge in edges:
     obj = tiled.Object()
-    obj.name = "exit %s" % str(edge)
+    obj.name = "exit %s" % str(edge[2])
     obj.mytype = "exit"
     obj.x = (edge[0]-5)*32
     obj.y = (edge[1]-5)*32
