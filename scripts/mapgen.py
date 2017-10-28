@@ -5,7 +5,6 @@ from PIL import ImageDraw
 
 import random
 from random import shuffle
-import logging
 import json
 import noise
 import curses
@@ -13,18 +12,6 @@ import math
 import numpy as np
 import sets
 import tiled
-
-global logger
-
-def init_log():
-  global logger
-  logger = logging.getLogger(__file__)
-  hdlr = logging.FileHandler(__file__ + ".log")
-  formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-  hdlr.setFormatter(formatter)
-  logger.addHandler(hdlr)
-  logger.setLevel(logging.DEBUG)
-  logger.info("mapgen init")
 
 def rotate(u, theta):
   m = np.array([[np.cos(theta), -np.sin(theta)],
@@ -150,8 +137,6 @@ class Path(Layer):
 
     while len(openSet) > 0:
       current, f = self.lowest_score(openSet, fScore)
-      logger.info("visiting %d,%d" % (current[0], current[1]))
-      logger.info("openSet = %s" % str(openSet))
       if current == goal:
         path = self.reconstruct_path(cameFrom, current)
         for (x,y) in path:
@@ -159,7 +144,6 @@ class Path(Layer):
             self.data[y,x] = 1
         self.data[path[0][1],path[0][0]] = 2
         self.data[path[-1][1],path[-1][0]] = 2
-        logger.info("ok, path = %s" % str(path))
         return True
       openSet.remove(current)
       closedSet.add(current)
@@ -202,8 +186,9 @@ def neighbors(x,y,data,width,height):
     data[y,min([width-1,x+1])]
   ]
 
-def main(size, scale, angle, name):
+def main(size, scale, angle, edge_mask, name, seed):
   elevation = Elevation(size)
+  elevation.base = seed
   elevation.scale = scale
   elevation.angle = angle
   elevation.generate()
@@ -219,13 +204,15 @@ def main(size, scale, angle, name):
   poi = poi[0:5]
 
   # random points of interest to the n, s, e and w
-  edges = [
-    (size[0]/2, 0, "top"),
-    (size[0]/2, size[1]-1, "bottom"),
-    (0, size[1]/2, "left"),
-    (size[0]-1, size[1]/2, "right")
-  ]
-  shuffle(edges)
+  edges = []
+  if edge_mask[0]:
+    edges.append((size[0]/2, 0, "top"))
+  if edge_mask[1]:
+    edges.append((size[0]/2, size[1]-1, "bottom"))
+  if edge_mask[2]:
+    edges.append((0, size[1]/2, "left"))
+  if edge_mask[3]:
+    edges.append((size[0]-1, size[1]/2, "right"))
   poi = [(e[0], e[1]) for e in edges] + poi
 
   # connect each poi to closest non-visited poi
@@ -434,18 +421,30 @@ def main(size, scale, angle, name):
           steppes[y0,x0-1] < z):
         draw.point((x,y),color)
 
-  color = (0, 0, 0, 255)
-  for c in connections:
-    x0 = c[0][0]*img.width/size[0]
-    y0 = c[0][1]*img.height/size[1]
-    x1 = c[1][0]*img.width/size[0]
-    y1 = c[1][1]*img.height/size[1]
-    #draw.line([(x0,y0),(x1,y1)],color)
-    draw.line([(x0-2,y0-2),(x0+2,y0+2)],color)
-    draw.line([(x0+2,y0-2),(x0-2,y0+2)],color)
-
-    draw.line([(x1-2,y1-2),(x1+2,y1+2)],color)
-    draw.line([(x1+2,y1-2),(x1-2,y1+2)],color)
+  color = (128, 128, 128, 255)
+  # for c in connections:
+  #   x0 = c[0][0]*img.width/size[0]
+  #   y0 = c[0][1]*img.height/size[1]
+  #   x1 = c[1][0]*img.width/size[0]
+  #   y1 = c[1][1]*img.height/size[1]
+  #   draw.line([(x0,y0),(x1,y1)],color)
+  #   # draw.line([(x0-2,y0-2),(x0+2,y0+2)],color)
+  #   # draw.line([(x0+2,y0-2),(x0-2,y0+2)],color)
+  #   # draw.line([(x1-2,y1-2),(x1+2,y1+2)],color)
+  #   # draw.line([(x1+2,y1-2),(x1-2,y1+2)],color)
+  for x in range(img.width-1):
+    for y in range(img.height-1):
+      x0 = int(size[0]*x/img.width)
+      y0 = int(size[1]*y/img.height)
+      x1 = int(size[0]*(x+1)/img.width)
+      y1 = int(size[1]*(y+1)/img.height)
+      if x1 <= x0:
+        x1 = x0+1
+      if y1 <= y0:
+        y1 = y0+1
+      chunk = path.data[y0:y1,x0:x1]
+      if 1 in chunk:
+        draw.point((x,y), color)
 
   img.save("../assets/images/minimaps/%s.png" % name, "PNG")
 
@@ -480,10 +479,10 @@ def main(size, scale, angle, name):
   f.close()
 
 if __name__ == '__main__':
-  init_log()
-
   scale = (125.0, 50.0)
   angle = math.radians(-30.0)
   size = (100, 100)
+  edges = [1, 1, 1, 1]
 
-  main(size, scale, angle, "sample")
+  base = random.randint(0,1024)
+  main(size, scale, angle, edges, "sample", base)
