@@ -60,20 +60,19 @@ class ObjectGroup(object):
   def __init__(self):
     self.name = "objectlayer"
     self.opacity = 1.0
-    self.mytype = "objectlayer"
+    self.mytype = "objectgroup"
     self.properties = {}
     self.propertytypes = {}
     self.x = 0
     self.y = 0
     self.draworder = "topdown"
     self.objects = []
+    self.visible = True
 
   def to_json(self):
     return {
       "objects": [o.to_json() for o in self.objects],
       "draworder": self.draworder,
-      "width": self.width,
-      "height": self.height,
       "visible": self.visible,
       "x": self.x,
       "y": self.y,

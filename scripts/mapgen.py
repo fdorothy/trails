@@ -408,7 +408,9 @@ def main(size, scale, angle):
     for p in c:
       if not p in visited:
         offset_x = random.randint(-3,3)
+        offset_x = min([max([offset_x,0]),size[0]-1])
         offset_y = random.randint(-3,3)
+        offset_y = min([max([offset_y,0]),size[1]-1])
         sl.data[(p[0]+offset_x)+(p[1]+offset_y)*size[0]] = marker[idx]
         idx=idx+1
         if idx >= len(marker):
@@ -448,6 +450,28 @@ def main(size, scale, angle):
     draw.line([(x1+2,y1-2),(x1-2,y1+2)],color)
 
   img.save("minimap.png", "PNG")
+
+  # setup rectangles for path exits on the corners
+  exits = tiled.ObjectGroup()
+  exits.name = "exits"
+  objid = 1
+  for edge in edges:
+    obj = tiled.Object()
+    obj.name = "exit %s" % str(edge)
+    obj.mytype = "exit"
+    obj.x = (edge[0]-5)*32
+    obj.y = (edge[1]-5)*32
+    obj.width = 10*32
+    obj.height = 10*32
+    obj.myid = objid
+    exits.objects.append(obj)
+    objid += 1
+  t.layers += [exits]
+    
+
+  # set the minimap in the json file
+  t.properties["minimap"] = "assets/images/minimaps/sample.png"
+  t.propertytypes["minimap"] = "string"
 
   data = t.to_json()
 
