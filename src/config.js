@@ -31,7 +31,7 @@ export default {
   // playground map
   state: {
     map: 'sample',
-    entrance: 'game_start',
+    entrance: 'exit bottom',
     equipped: 'forage',
     items: [
       {

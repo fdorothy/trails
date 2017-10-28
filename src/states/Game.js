@@ -38,8 +38,8 @@ export default class extends Phaser.State {
     var entranceXY = this.getEntranceXY(config.state.entrance);
     this.player = new Player({
       game: this.game,
-      x: 0,//entranceXY[0],
-      y: 0,//entranceXY[1],
+      x: entranceXY[0],
+      y: entranceXY[1],
       asset: 'hero'
     })
     this.player.body.setSize(this.player.body.width * 0.75, this.player.body.height, 0, 0);
@@ -199,16 +199,11 @@ export default class extends Phaser.State {
   }
 
   trigger(x, y) {
-    if (y.props.type == "exit") {
-      this.warp(y.props.properties);
-    } else if (y.props.type == "item") {
-      if (this.spacebar.isDown) {
-	this.pickupItem(y);
-      }
-    } else if (y.props.type == "door") {
-      if (this.spacebar.isDown) {
-	this.warp(y.props.properties);
-      }
+    if (this.spacebar.isDown) {
+      if (y.props.type == "exit")
+        this.warp(y.props.properties);
+      else if (y.props.type == "item")
+        this.pickupItem(y);
     }
 
     // show tooltip if available
@@ -242,9 +237,8 @@ export default class extends Phaser.State {
 
   getEntranceXY(entrance_name) {
     var entrance = this.map.objectMap[entrance_name];
-    return [0,0]
-    //return [entrance.x+entrance.width/2.0,
-    //entrance.y+entrance.height/2.0]
+    return [entrance.x+entrance.width/2.0,
+            entrance.y+entrance.height/2.0]
   }
 
   update() {

@@ -7,6 +7,7 @@ export default class extends Phaser.Tilemap {
     super(game, asset)
     this.asset = asset;
 
+    // add in tilesets
     for (var i in this.tilesets) {
       key = this.tilesets[i].name;
       this.addTilesetImage(key);
@@ -15,7 +16,6 @@ export default class extends Phaser.Tilemap {
     // load all tile layers
     this.layerMap = {};
     this.boundaries = [];
-    this.water = [];
     var spriteLayerName = "";
     if (this.properties && this.properties.spriteLayer)
       var spriteLayerName = this.properties.spriteLayer;
@@ -26,9 +26,6 @@ export default class extends Phaser.Tilemap {
       if (info.properties.collides) {
 	this.setCollisionBetween(1, 2000, true, name);
 	this.boundaries.push(layer);
-      } else if (info.properties.water) {
-	this.setCollisionBetween(1, 2000, true, name);
-	this.water.push(layer);
       }
       layer.alpha = info.alpha;
       layer.resizeWorld();
