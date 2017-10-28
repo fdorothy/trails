@@ -188,11 +188,19 @@ def tile4_idx(up, down, left, right):
 #  0 1 2
 #  3   4
 #  5 6 7
-def tile8_idx(vals):
+def tile_n_idx(vals):
   acc = 0
   for i in range(len(vals)):
     acc += (int)(vals[i])<<i
   return acc
+
+def neighbors(x,y,data,width,height):
+  return [
+    data[max([0,y-1]),x],
+    data[min([height-1,y+1]),x],
+    data[y,max([0,x-1])],
+    data[y,min([width-1,x+1])]
+  ]
 
 def main(size, scale, angle):
   elevation = Elevation(size)
@@ -212,10 +220,10 @@ def main(size, scale, angle):
 
   # random points of interest to the n, s, e and w
   edges = [
-    (size[0]/2, 3, "top"),
-    (size[0]/2, size[1]-3, "bottom"),
-    (3, size[1]/2, "left"),
-    (size[0]-3, size[1]/2, "right")
+    (size[0]/2, 0, "top"),
+    (size[0]/2, size[1]-1, "bottom"),
+    (0, size[1]/2, "left"),
+    (size[0]-1, size[1]/2, "right")
   ]
   shuffle(edges)
   poi = [(e[0], e[1]) for e in edges] + poi
@@ -341,29 +349,23 @@ def main(size, scale, angle):
   # fill in the water
   for y in range(size[1]):
     for x in range(size[0]):
-      if (x > 0 and y > 0 and
-          x < size[0]-1 and y < size[1]-1 and
-          steppes[y,x] == 1):
-        vals = [
-          steppes[y-1,x+0]==1,
-          steppes[y+1,x+0]==1,
-          steppes[y+0,x-1]==1,
-          steppes[y+0,x+1]==1,
-        ]
-        idx = tile4_idx(*vals)
-        print vals, " -> ", idx
+      if steppes[y,x] == 1:
+        vals = neighbors(x,y,steppes,size[0],size[1])
+        idx = tile4_idx(*[v == 1 for v in vals])
         pos = x+y*size[0]
         if water.has_key(idx):
           tl.data[pos] = water[idx]
         if tl.data[pos] == water[15]:
-          if steppes[y-1,x-1]!=1:
-            tl.data[pos] = water_ul
-          elif steppes[y-1,x+1]!=1:
-            tl.data[pos] = water_ur
-          elif steppes[y+1,x-1]!=1:
-            tl.data[pos] = water_dl
-          elif steppes[y+1,x+1]!=1:
-            tl.data[pos] = water_dr
+          if (x > 0 and y > 0 and
+              x < size[0]-1 and y < size[1]-1):
+            if steppes[y-1,x-1]!=1:
+              tl.data[pos] = water_ul
+            elif steppes[y-1,x+1]!=1:
+              tl.data[pos] = water_ur
+            elif steppes[y+1,x-1]!=1:
+              tl.data[pos] = water_dl
+            elif steppes[y+1,x+1]!=1:
+              tl.data[pos] = water_dr
 
   # make the paths layer
   pl = tiled.TileLayer()
@@ -374,14 +376,10 @@ def main(size, scale, angle):
   for y in range(size[1]):
     for x in range(size[0]):
       val = 0
-      if (x > 0 and y > 0 and
-          x < size[0]-1 and y < size[1]-1 and
-          path.data[y,x] != 0):
-        up = (path.data[y-1,x] != 0)
-        down = (path.data[y+1,x] != 0)
-        left = (path.data[y,x-1] != 0)
-        right = (path.data[y,x+1] != 0)
-        idx = tile4_idx(up,down,left,right)
+      if path.data[y,x] != 0:
+        n = neighbors(x,y,path.data,size[0],size[1])
+        n = [i != 0 for i in n]
+        idx = tile_n_idx(n)
         if trail.has_key(idx):
           val = trail[idx]
           grass_decor_layer.data[x+y*size[0]] = 0
@@ -407,11 +405,11 @@ def main(size, scale, angle):
   for c in connections:
     for p in c:
       if not p in visited:
-        offset_x = random.randint(-3,3)
-        offset_x = min([max([offset_x,0]),size[0]-1])
-        offset_y = random.randint(-3,3)
-        offset_y = min([max([offset_y,0]),size[1]-1])
-        sl.data[(p[0]+offset_x)+(p[1]+offset_y)*size[0]] = marker[idx]
+        x = random.randint(-3,3)+p[0]
+        x = min([max([x,0]),size[0]-1])
+        y = random.randint(-3,3)+p[1]
+        y = min([max([y,0]),size[1]-1])
+        sl.data[x+y*size[0]] = marker[idx]
         idx=idx+1
         if idx >= len(marker):
           idx = 0
