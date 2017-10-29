@@ -43,6 +43,7 @@ export default {
     starfield: 'assets/images/starfield.png',
     map_unknown: 'assets/images/map_unknown.png',
     overlay: 'assets/images/overlay.png',
+    head: 'assets/images/head.png'
   },
   // playground map
   state: {

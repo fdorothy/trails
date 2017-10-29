@@ -16,6 +16,9 @@ export default class extends Phaser.State {
   }
 
   create () {
+    // constants
+    this.worldMapTileSize = 64;
+
     this.game.physics.startSystem(Phaser.Physics.ARCADE);
     this.game.time.advancedTiming = true;
 
@@ -169,7 +172,7 @@ export default class extends Phaser.State {
   }
 
   createWorldMap() {
-    var width = 48;
+    var width = this.worldMapTileSize;
     this.world = this.game.add.group();
     for (var i in config.state.grid) {
       var row = config.state.grid[i];
@@ -197,7 +200,25 @@ export default class extends Phaser.State {
     this.overlay = new Phaser.Sprite(this.game, x, y, 'overlay')
     this.overlay.alpha = 0.0
     this.world.add(this.overlay)
-    var tween = game.add.tween(this.overlay).to( { alpha: 1 }, 2000, "Linear", true, 0, -1, true);
+    var tween = game.add.tween(this.overlay).to(
+      {alpha: 1},
+      2000,
+      "Linear",
+      true,
+      0,
+      -1,
+      true
+    );
+
+    // add the sprite to represent current position
+    this.worldHead = new Phaser.Sprite(
+      this.game,
+      x+width/2, y+width/2,
+      'head'
+    );
+    this.worldHead.anchor.x = 0.5;
+    this.worldHead.anchor.y = 0.5;
+    this.world.add(this.worldHead);
 
     this.world.fixedToCamera = true;
     this.world.desiredX = config.gameWidth/2.0 - width*7/2.0;
@@ -373,5 +394,12 @@ export default class extends Phaser.State {
     this.worldTween.to({y: 5}, 500, "Linear", true)
     this.world.visible = true;
     this.mapVisible = true;
+
+    // update our location on the map
+    var width = this.worldMapTileSize;
+    var x = config.state.world_location[0]*width;
+    var y = config.state.world_location[1]*width;
+    this.worldHead.x = x+this.player.x*width/this.map.widthInPixels;
+    this.worldHead.y = y+this.player.y*width/this.map.heightInPixels;
   }
 }
