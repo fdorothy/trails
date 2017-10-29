@@ -5,9 +5,6 @@ export default class extends Phaser.Sprite {
   constructor ({ game, x, y, name }) {
     super(game, x, y, name)
     this.name = name;
-    game.physics.arcade.enable(this);
-    this.body.collideWorldBounds = true;
-    this.body.gravity.y = config.world.gravity;
     this.anchor.setTo(0.5, 0.5);
     this.emitter = game.add.emitter(x, y, 100);
     this.emitter.makeParticles('diamond');

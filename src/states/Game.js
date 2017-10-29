@@ -18,48 +18,39 @@ export default class extends Phaser.State {
   create () {
     this.game.physics.startSystem(Phaser.Physics.ARCADE);
     this.game.time.advancedTiming = true;
-    this.itemPickupCooldown = 1.0;
 
-    this.backgroundLayer = this.game.add.group();
-    this.mapVisible = false;
+    this.loadMap();
+    this.loadPlayer();
+    this.initKeyboard();
+    this.initTooltip();
 
-    this.map = new Level({
-      game: this.game,
-      asset: config.state.map
-    });
+    this.spawnItems();
+    this.spawnMapPiece();
+    this.spawnMonsters();
 
-    // background if needed
-    if (this.map.properties && this.map.properties.background) {
-      this.bg = new Phaser.TileSprite(this.game, 0, 0, this.game.world.width * 3 / 2, this.game.world.height * 3 / 2, this.map.properties.background);
-      this.bg.tilePosition.y += 2;
-      this.bg.anchor.setTo(0.5, 0.5);
-      this.backgroundLayer.add(this.bg);
-    }
+    this.emitterLayer = this.game.add.group();
 
-    // create and add player
-    var entranceXY = this.getEntranceXY(config.state.entrance);
-    this.player = new Player({
-      game: this.game,
-      x: entranceXY[0],
-      y: entranceXY[1],
-      asset: 'hero'
-    })
-    this.player.body.setSize(this.player.body.width * 0.75, this.player.body.height, 0, 0);
-    this.map.spriteLayer.add(this.player);
-    this.game.camera.follow(this.player);
+    // the world map
+    this.createWorldMap();
 
-    this.cursor = this.game.input.keyboard.createCursorKeys();
-    this.spacebar = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-    this.game.input.keyboard.addCallbacks(this, null, null, this.onKey);
-    this.game.input.keyboard.addKeyCapture([
+    this.drytimer = 0.0;
+  }
+
+  initKeyboard() {
+    var kbrd = this.game.input.keyboard;
+    this.cursor = kbrd.createCursorKeys();
+    this.spacebar = kbrd.addKey(Phaser.Keyboard.SPACEBAR);
+    kbrd.addCallbacks(this, null, null, this.onKey);
+    kbrd.addKeyCapture([
       Phaser.Keyboard.LEFT,
       Phaser.Keyboard.RIGHT,
       Phaser.Keyboard.UP,
       Phaser.Keyboard.DOWN,
       Phaser.Keyboard.SPACEBAR
     ]);
+  }
 
-    // tooltip that appears above items
+  initTooltip() {
     var style = {
       font: 'bold 16px Belgrano',
       fill: '#000',
@@ -68,72 +59,11 @@ export default class extends Phaser.State {
       boundsAlignH: "center",
       boundsAlignV: "middle",
     };
-
-    this.tooltip = this.add.text(this.player.x, this.player.y, '', style);
+    this.tooltip = this.add.text(0, 0, '', style);
     this.tooltip.anchor.setTo(0.5, 0.5);
+  }
 
-    // message that appears in center of screen
-    this.message = this.add.text(0, 0, '', style)
-    this.message.anchor.setTo(0.5, 0.5);
-    this.messageTime = 0.0;
-
-    this.emitterLayer = this.game.add.group();
-
-    // spawn items
-    this.items = new Phaser.Group(this.game);
-    this.map.spriteLayer.add(this.items);
-    if (config.state.items == null)
-      config.state.items = {};
-    for (var key in config.state.items) {
-      var obj = config.state.items[key];
-      if (obj != "equipped" && obj.map == this.map.asset) {
-       	this.spawnItem(key, obj.x, obj.y);
-      }
-    }
-    for (var key in this.map.allObjects) {
-      var obj = this.map.allObjects[key];
-      if (obj.type == "item_spawn") {
-	if (config.state.items[obj.name] == null) {
-	  this.spawnItem(obj.name, obj.x + obj.width/2.0, obj.y+obj.height/2.0);
-	}
-      }
-    }
-
-    // spawn monsters
-    this.monsters = new Phaser.Group(this.game);
-    this.map.spriteLayer.add(this.monsters);
-    for (var key in this.map.allObjects) {
-      var monster = this.map.allObjects[key];
-      if (monster.type == "monster") {
-	var sprite = new Monster({
-	  game: this.game,
-	  x: monster.x + monster.width / 2.0,
-	  y: monster.y + monster.height / 2.0,
-	  info: monster.properties
-	});
-	this.monsters.add(sprite);
-      }
-    }
-
-    // show how long we have to solve the game
-    this.hud = this.game.add.group();
-    this.hud.fixedToCamera = true;
-    
-    var style = {
-      font: 'bold 16px Belgrano',
-      fill: '#900',
-      align: 'center',
-      boundsAlignH: "center",
-      boundsAlignV: "middle",
-    };
-    this.deadTime = new Phaser.Text(this.game, this.camera.width / 2, 0, config.state.deadTime, style);
-    this.hud.add(this.deadTime);
-    this.deadTime.anchor.setTo(0.5, 0);
-
-    // the world map
-    this.createWorldMap();
-
-    // music!
+  initSound() {
     if (game.music == null) {
       game.music = {};
     }
@@ -160,8 +90,82 @@ export default class extends Phaser.State {
       fire: this.game.add.audio('fire_audio'),
     }
     this.player.sfx = this.sfx;
+  }
 
-    this.drytimer = 0.0;
+  loadMap() {
+    var pos = config.state.world_location;
+    var name = config.state.grid[pos[1]][pos[0]];
+    this.map = new Level({
+      game: this.game,
+      asset: name
+    });
+  }
+
+  loadPlayer() {
+    var entranceXY = this.getEntranceXY(config.state.entrance);
+    this.player = new Player({
+      game: this.game,
+      x: entranceXY[0],
+      y: entranceXY[1],
+      asset: 'hero'
+    })
+    this.player.body.setSize(
+      this.player.body.width * 0.75,
+      this.player.body.height,
+      0, 0
+    );
+    this.map.spriteLayer.add(this.player);
+    this.game.camera.follow(this.player);
+  }
+
+  spawnItems() {
+    this.items = new Phaser.Group(this.game);
+    this.map.spriteLayer.add(this.items);
+    if (config.state.items == null)
+      config.state.items = {};
+    for (var key in config.state.items) {
+      var obj = config.state.items[key];
+      if (obj != "equipped" && obj.map == this.map.asset) {
+       	this.spawnItem(key, obj.x, obj.y);
+      }
+    }
+    for (var key in this.map.allObjects) {
+      var obj = this.map.allObjects[key];
+      if (obj.type == "item_spawn") {
+	if (config.state.items[obj.name] == null) {
+	  this.spawnItem(obj.name, obj.x + obj.width/2.0, obj.y+obj.height/2.0);
+	}
+      }
+    }
+  }
+
+  spawnMapPiece() {
+    var poi = [];
+    for (var i in this.map.objectMap) {
+      var obj = this.map.objectMap[i];
+      console.log(obj.type);
+      if (obj.type == 'poi') {
+        console.log("found poi");
+      }
+    }
+  }
+
+  spawnMonsters() {
+    // spawn monsters
+    this.monsters = new Phaser.Group(this.game);
+    this.map.spriteLayer.add(this.monsters);
+    for (var key in this.map.allObjects) {
+      var monster = this.map.allObjects[key];
+      if (monster.type == "monster") {
+	var sprite = new Monster({
+	  game: this.game,
+	  x: monster.x + monster.width / 2.0,
+	  y: monster.y + monster.height / 2.0,
+	  info: monster.properties
+	});
+	this.monsters.add(sprite);
+      }
+    }
   }
 
   createWorldMap() {
@@ -199,6 +203,7 @@ export default class extends Phaser.State {
     this.world.desiredX = config.gameWidth/2.0 - width*7/2.0;
     this.world.cameraOffset.x = this.world.desiredX;
     this.world.cameraOffset.y = 5;
+    this.world.visible = false;
     this.hideMap();
   }
 
@@ -209,7 +214,11 @@ export default class extends Phaser.State {
       y: y,
       name: name
     });
-    sprite.props = {name: name, type: "item", properties: {tooltip: name}}
+    sprite.props = {
+      name: name,
+      type: "item",
+      properties: {tooltip: name}
+    }
     this.items.add(sprite);
     this.emitterLayer.add(sprite.emitter);
     this.updateItemState(sprite);
@@ -225,14 +234,11 @@ export default class extends Phaser.State {
   }
 
   pickupItem(sprite) {
-    if (this.itemPickupCooldown <= 0.0) {
-      this.sfx.pickup.play();
-      config.state.equipped = sprite.props.name;
-      config.state.items.add({name: sprite.props.name})
-      sprite.destroy();
-      config.state.items[sprite.props.name] = "equipped";
-      this.itemPickupCooldown = 1.0;
-    }
+    this.sfx.pickup.play();
+    config.state.equipped = sprite.props.name;
+    config.state.items.add({name: sprite.props.name})
+    sprite.destroy();
+    config.state.items[sprite.props.name] = "equipped";
   }
 
   render () {
@@ -264,15 +270,6 @@ export default class extends Phaser.State {
       config.state.entrance = props.entrance;
       this.state.start('Warp');
     } else {
-      this.setMessageText("cannot fit");
-    }
-  }
-
-  setMessageText(text) {
-    if (text != this.message.text) {
-      this.message.text = text;
-      this.messageTime = 5.0;
-      this.message.visible = true;
     }
   }
 
@@ -283,118 +280,98 @@ export default class extends Phaser.State {
   }
 
   update() {
-    var dt = this.game.time.physicsElapsed;
+    this.resetTooltip();
+    this.checkCollision();
+    this.checkItems();
+    this.checkTriggers();
+    this.checkMonsters();
+    this.checkKeys();
+  }
 
-    // reduce the rescue time if set
-    if (config.state.rescueTime > 0.0) {
-      config.state.rescueTime -= dt;
-    } else {
-      config.state.rescueTime = 0.0;
-    }
-
-    // reduce and check dead time
-    if (config.state.deadTime <= 0.0) {
-      this.state.start("GameOver");
-    } else {
-      config.state.deadTime -= dt;
-      var t = config.state.deadTime.toFixed(0)
-      this.deadTime.text = t;
-    }
-
-    // switch to the game over screen if we won
-    if (config.state.rescueTime == 0.0 && config.state.rescued) {
-      this.state.start("GameOver");
-    }
-
-    // set our message text to center of screen
-    this.updateMessage(dt);
-    
-    // clear the tooltip and message texts
+  resetTooltip() {
     this.tooltip.text = '';
     this.tooltip.x = this.player.x;
     this.tooltip.y = this.player.y - 32;
+  }
 
-    if (this.itemPickupCooldown > 0.0)
-      this.itemPickupCooldown -= dt;
-    game.physics.arcade.collide([this.player, this.monsters, this.items], this.map.boundaries);
+  checkCollision() {
+    game.physics.arcade.collide(
+      this.player,
+      this.map.boundaries
+    );
+  }
 
-    var inwater = this.player.underwater;
-    this.player.underwater = false;
-    for (var idx in this.map.water) {
-      var layer = this.map.water[idx];
-      var tiles = layer.getTiles(this.player.x - 16, this.player.y - 16 - this.player.height / 2.0, 32, 32);
-      this.player.underwater = tiles.filter((x) => x.index != -1).length > 0;
-    }
-    if (inwater != this.player.underwater && this.drytimer > 0.25) {
-      this.sfx.splash.play();
-    }
-    if (this.player.underwater)
-      this.drytimer = 0.0;
-    else
-      this.drytimer += dt;
+  checkItems() {
+    game.physics.arcade.overlap(
+      this.player,
+      this.items,
+      this.trigger,
+      null,
+      this
+    );
+  }
 
-    game.physics.arcade.overlap(this.player, this.items, this.trigger, null, this);
-    game.physics.arcade.overlap(this.player, this.map.triggers, this.trigger, null, this);
-    game.physics.arcade.overlap(this.player, this.monsters, (x, y) => {
-      this.sfx.death.play();
-      this.state.start("GameOver");
-    }, null, this);
+  checkTriggers() {
+    game.physics.arcade.overlap(
+      this.player,
+      this.map.triggers,
+      this.trigger,
+      null,
+      this
+    );
+  }
 
-    if (this.cursor.left.isDown) {
+  checkKeys() {
+    if (this.cursor.left.isDown)
       this.player.moveLeft();
-    }
-    else if (this.cursor.right.isDown) {
+    else if (this.cursor.right.isDown)
       this.player.moveRight();
-    } else
+    else
       this.player.stopLR();
     
-    if (this.cursor.up.isDown) {
+    if (this.cursor.up.isDown)
       this.player.moveUp();
-    }
-    else if (this.cursor.down.isDown) {
+    else if (this.cursor.down.isDown)
       this.player.moveDown();
-    } else
+    else
       this.player.stopUD();
   }
 
   onKey(x) {
-    if (x == 'm' || x == 'M') {
-      if (this.mapVisible) {
+    if (x == 'm' || x == 'M')
+      if (this.mapVisible)
         this.hideMap();
-      } else {
+      else
         this.showMap();
-      }
-    }
+  }
+
+  checkMonsters() {
+    game.physics.arcade.overlap(
+      this.player,
+      this.monsters,
+      (x, y) => {
+        this.sfx.death.play();
+        this.state.start("GameOver");
+      },
+      null,
+      this
+    );
   }
 
   hideMap() {
-    console.log("hiding map");
     if (this.worldTween)
       this.worldTween.stop();
     this.worldTween = game.add.tween(this.world.cameraOffset);
     this.worldTween.to({y: -500}, 500, "Linear", true)
-    //this.world.visible = false;
     this.mapVisible = false;
   }
 
   showMap() {
-    console.log("showing map");
     if (this.worldTween)
       this.worldTween.stop();
     this.worldTween = game.add.tween(this.world.cameraOffset);
     this.worldTween.to({y: 5}, 500, "Linear", true)
-    //this.world.visible = true;
+    this.world.visible = true;
     this.mapVisible = true;
-  }
-
-  updateMessage(dt) {
-    if (this.messageTime > 0.0) {
-      this.message.x = this.player.x;
-      this.message.y = this.player.y - 32;
-      this.messageTime -= dt;
-    } else {
-      this.message.text = '';
-      this.message.visible = false;
-    }
   }
 }
