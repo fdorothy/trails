@@ -3,6 +3,7 @@
 from PIL import Image
 from PIL import ImageDraw
 
+import copy
 import random
 from random import shuffle
 import json
@@ -202,6 +203,7 @@ def main(size, scale, angle, edge_mask, name, seed):
       poi.append((int(i),int(j)))
   shuffle(poi)
   poi = poi[0:5]
+  interior_poi = copy.deepcopy(poi)
 
   # random points of interest to the n, s, e and w
   edges = []
@@ -421,7 +423,13 @@ def main(size, scale, angle, edge_mask, name, seed):
           steppes[y0,x0-1] < z):
         draw.point((x,y),color)
 
-  color = (128, 128, 128, 255)
+  # draw the lines from edges to center
+  color = (255, 128, 128, 255)
+  p2 = (img.width/2,img.height/2)
+  for e in edges:
+    p1 = (e[0]*img.width/size[0], e[1]*img.height/size[1])
+    draw.line([p1,p2], color, width=5)
+
   # for c in connections:
   #   x0 = c[0][0]*img.width/size[0]
   #   y0 = c[0][1]*img.height/size[1]
@@ -432,19 +440,19 @@ def main(size, scale, angle, edge_mask, name, seed):
   #   # draw.line([(x0+2,y0-2),(x0-2,y0+2)],color)
   #   # draw.line([(x1-2,y1-2),(x1+2,y1+2)],color)
   #   # draw.line([(x1+2,y1-2),(x1-2,y1+2)],color)
-  for x in range(img.width-1):
-    for y in range(img.height-1):
-      x0 = int(size[0]*x/img.width)
-      y0 = int(size[1]*y/img.height)
-      x1 = int(size[0]*(x+1)/img.width)
-      y1 = int(size[1]*(y+1)/img.height)
-      if x1 <= x0:
-        x1 = x0+1
-      if y1 <= y0:
-        y1 = y0+1
-      chunk = path.data[y0:y1,x0:x1]
-      if 1 in chunk:
-        draw.point((x,y), color)
+  # for x in range(img.width-1):
+  #   for y in range(img.height-1):
+  #     x0 = int(size[0]*x/img.width)
+  #     y0 = int(size[1]*y/img.height)
+  #     x1 = int(size[0]*(x+1)/img.width)
+  #     y1 = int(size[1]*(y+1)/img.height)
+  #     if x1 <= x0:
+  #       x1 = x0+1
+  #     if y1 <= y0:
+  #       y1 = y0+1
+  #     chunk = path.data[y0:y1,x0:x1]
+  #     if 1 in chunk:
+  #       draw.point((x,y), color)
 
   img.save("../assets/images/minimaps/%s.png" % name, "PNG")
 
@@ -466,7 +474,24 @@ def main(size, scale, angle, edge_mask, name, seed):
     exits.objects.append(obj)
     objid += 1
   t.layers += [exits]
-    
+
+  # setup objects to mark points of interest on the map,
+  # for spawning things
+  pois = tiled.ObjectGroup()
+  pois.name = "poi"
+  objid = 1
+  for pt in interior_poi:
+    obj = tiled.Object()
+    obj.name = "poi_%d" % objid
+    obj.mytype = "poi"
+    obj.x = (pt[0]*32)
+    obj.y = (pt[1]*32)
+    obj.width = 32
+    obj.height = 32
+    obj.myid = objid
+    pois.objects.append(obj)
+    objid += 1
+  t.layers += [pois]
 
   # set the minimap in the json file
   t.properties["minimap"] = "assets/images/minimaps/%s.png" % name

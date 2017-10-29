@@ -15,6 +15,9 @@ export default class extends Phaser.State {
     // load all tilemaps and tilesheets
     for (var key in config.levels) {
       this.load.tilemap(key, config.levels[key].asset, null, Phaser.Tilemap.TILED_JSON);
+
+      // load the minimap as an image
+      this.load.image(key + '_map', config.levels[key].minimap)
     }
 
     for (var key in config.images) {

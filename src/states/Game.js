@@ -21,6 +21,8 @@ export default class extends Phaser.State {
     this.itemPickupCooldown = 1.0;
 
     this.backgroundLayer = this.game.add.group();
+    this.mapVisible = false;
+
     this.map = new Level({
       game: this.game,
       asset: config.state.map
@@ -48,7 +50,7 @@ export default class extends Phaser.State {
 
     this.cursor = this.game.input.keyboard.createCursorKeys();
     this.spacebar = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-    this.dropkey = this.game.input.keyboard.addKey(Phaser.Keyboard.D);
+    this.game.input.keyboard.addCallbacks(this, null, null, this.onKey);
     this.game.input.keyboard.addKeyCapture([
       Phaser.Keyboard.LEFT,
       Phaser.Keyboard.RIGHT,
@@ -128,6 +130,9 @@ export default class extends Phaser.State {
     this.hud.add(this.deadTime);
     this.deadTime.anchor.setTo(0.5, 0);
 
+    // the world map
+    this.createWorldMap();
+
     // music!
     if (game.music == null) {
       game.music = {};
@@ -157,6 +162,44 @@ export default class extends Phaser.State {
     this.player.sfx = this.sfx;
 
     this.drytimer = 0.0;
+  }
+
+  createWorldMap() {
+    var width = 48;
+    this.world = this.game.add.group();
+    for (var i in config.state.grid) {
+      var row = config.state.grid[i];
+      for (var j in row) {
+        var cell = row[j];
+        var minimap = "map_unknown";
+        if (cell != null) {
+          minimap = cell + '_map';
+        }
+        var sprite = new Phaser.Sprite(
+          this.game,
+          j*width, i*width,
+          minimap,
+        );
+        sprite.width = width;
+        sprite.height = width;
+        this.world.add(sprite);
+      }
+    }
+
+    // add in the overlay to show our current
+    // position on the world-map
+    var x = config.state.world_location[0]*width;
+    var y = config.state.world_location[1]*width;
+    this.overlay = new Phaser.Sprite(this.game, x, y, 'overlay')
+    this.overlay.alpha = 0.0
+    this.world.add(this.overlay)
+    var tween = game.add.tween(this.overlay).to( { alpha: 1 }, 2000, "Linear", true, 0, -1, true);
+
+    this.world.fixedToCamera = true;
+    this.world.desiredX = config.gameWidth/2.0 - width*7/2.0;
+    this.world.cameraOffset.x = this.world.desiredX;
+    this.world.cameraOffset.y = 5;
+    this.hideMap();
   }
 
   spawnItem(name, x, y) {
@@ -312,6 +355,36 @@ export default class extends Phaser.State {
       this.player.moveDown();
     } else
       this.player.stopUD();
+  }
+
+  onKey(x) {
+    if (x == 'm' || x == 'M') {
+      if (this.mapVisible) {
+        this.hideMap();
+      } else {
+        this.showMap();
+      }
+    }
+  }
+
+  hideMap() {
+    console.log("hiding map");
+    if (this.worldTween)
+      this.worldTween.stop();
+    this.worldTween = game.add.tween(this.world.cameraOffset);
+    this.worldTween.to({y: -500}, 500, "Linear", true)
+    //this.world.visible = false;
+    this.mapVisible = false;
+  }
+
+  showMap() {
+    console.log("showing map");
+    if (this.worldTween)
+      this.worldTween.stop();
+    this.worldTween = game.add.tween(this.world.cameraOffset);
+    this.worldTween.to({y: 5}, 500, "Linear", true)
+    //this.world.visible = true;
+    this.mapVisible = true;
   }
 
   updateMessage(dt) {
