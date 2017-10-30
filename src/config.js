@@ -43,10 +43,12 @@ export default {
     starfield: 'assets/images/starfield.png',
     map_unknown: 'assets/images/map_unknown.png',
     overlay: 'assets/images/overlay.png',
-    head: 'assets/images/head.png'
+    head: 'assets/images/head.png',
+    arrow: 'assets/images/arrow.png'
   },
   // playground map
   state: {
+    new_game: true,
     map: 'sample',
     grid: [
       [null, null, null, null, null, null, null],
@@ -59,11 +61,11 @@ export default {
     ],
     entrance: 'exit bottom',
     equipped_map: null,
-    world_map: null,
+    world_map: [
+      {world: [3,3], local: [50,50]}
+    ],
     world_location: [3,3],
-    rescueTime: 0.0,
-    rescued: false,
-    deadTime: 999
+    tile_bag: []
   }
 
   // use for trying out maps

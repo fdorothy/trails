@@ -22,6 +22,8 @@ export default class extends Phaser.State {
     this.game.physics.startSystem(Phaser.Physics.ARCADE);
     this.game.time.advancedTiming = true;
 
+    if (config.state.new_game)
+      this.resetGame();
     this.loadMap();
     this.loadPlayer();
     this.initKeyboard();
@@ -51,6 +53,24 @@ export default class extends Phaser.State {
       Phaser.Keyboard.DOWN,
       Phaser.Keyboard.SPACEBAR
     ]);
+  }
+
+  resetGame() {
+    config.state.new_game = false;
+    var bag = [];
+    this.addToBag(bag, 'x', 3);
+    this.addToBag(bag, 'ud', 14);
+    this.addToBag(bag, 'c_ul', 14);
+    this.addToBag(bag, 't_u', 9);
+    this.addToBag(bag, 'd_u', 4);
+    this.shuffleArray(bag);
+    console.log(bag);
+    config.state.tile_bag = bag;
+  }
+
+  addToBag(bag, piece, count) {
+    for (var i=0; i<count; i++)
+      bag.push(piece);
   }
 
   initTooltip() {
@@ -126,19 +146,11 @@ export default class extends Phaser.State {
     this.map.spriteLayer.add(this.items);
     if (config.state.items == null)
       config.state.items = {};
-    for (var key in config.state.items) {
-      var obj = config.state.items[key];
-      if (obj != "equipped" && obj.map == this.map.asset) {
-       	this.spawnItem(key, obj.x, obj.y);
-      }
-    }
-    for (var key in this.map.allObjects) {
-      var obj = this.map.allObjects[key];
-      if (obj.type == "item_spawn") {
-	if (config.state.items[obj.name] == null) {
-	  this.spawnItem(obj.name, obj.x + obj.width/2.0, obj.y+obj.height/2.0);
-	}
-      }
+    for (var i in config.state.world_map) {
+      var obj = config.state.world_map[i];
+      if (obj.world[0] == config.state.world_location[0] &&
+          obj.world[1] == config.state.world_location[1])
+        this.addMapPiece(obj.local[0]*32, obj.local[1]*32);
     }
   }
 
@@ -146,9 +158,7 @@ export default class extends Phaser.State {
     var poi = [];
     for (var i in this.map.objectMap) {
       var obj = this.map.objectMap[i];
-      console.log(obj.type);
       if (obj.type == 'poi') {
-        console.log("found poi");
       }
     }
   }
@@ -220,6 +230,29 @@ export default class extends Phaser.State {
     this.worldHead.anchor.y = 0.5;
     this.world.add(this.worldHead);
 
+    // add sprites for map pieces
+    this.worldItems = []
+    for (i in config.state.world_map) {
+      var piece = config.state.world_map[i];
+      var x = piece.world[0]*width +
+          piece.local[0]*width/this.map.width;
+      var y = piece.world[1]*width +
+          piece.local[1]*width/this.map.height;
+      var sprite = new Phaser.Sprite(this.game, x, y, 'arrow');
+      sprite.anchor.x = 0.5;
+      sprite.anchor.y = 1.0;
+      var tween = game.add.tween(sprite).to(
+        {y: y-5},
+        650,
+        Phaser.Easing.Bounce.InOut,
+        true,
+        0,
+        -1,
+        true
+      );
+      this.world.add(sprite);
+    }
+
     this.world.fixedToCamera = true;
     this.world.desiredX = config.gameWidth/2.0 - width*7/2.0;
     this.world.cameraOffset.x = this.world.desiredX;
@@ -228,38 +261,38 @@ export default class extends Phaser.State {
     this.hideMap();
   }
 
-  spawnItem(name, x, y) {
-    var sprite = new Item({
-      game: this.game,
-      x: x,
-      y: y,
-      name: name
-    });
-    sprite.props = {
-      name: name,
-      type: "item",
-      properties: {tooltip: name}
-    }
+  addMapPiece(x, y) {
+    var sprite = new Phaser.Sprite(
+      this.game,
+      x,
+      y,
+      'map_unknown'
+    );
+    sprite.props = {type: 'map'}
+    sprite.width = 32;
+    sprite.height = 32;
+    this.game.physics.enable(sprite, Phaser.Physics.ARCADE);
     this.items.add(sprite);
-    this.emitterLayer.add(sprite.emitter);
-    this.updateItemState(sprite);
     return sprite;
   }
 
-  updateItemState(sprite) {
-    config.state.items[sprite.props.name] = {
-      map: this.map.asset,
-      x: sprite.x,
-      y: sprite.y
-    };
+  pickupItem(sprite) {
+    //this.sfx.pickup.play();
+
+    // pick a random tile to pickup
+    var map = config.state.tile_bag.shift();
+    config.state.equipped_map = map;
+
+    // destroy old tile, and forget it
+    sprite.destroy();
+    config.state.world_map = []
   }
 
-  pickupItem(sprite) {
-    this.sfx.pickup.play();
-    config.state.equipped = sprite.props.name;
-    config.state.items.add({name: sprite.props.name})
-    sprite.destroy();
-    config.state.items[sprite.props.name] = "equipped";
+  shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      let j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
   }
 
   render () {
@@ -272,9 +305,9 @@ export default class extends Phaser.State {
     if (this.spacebar.isDown) {
       if (y.props.type == "exit")
         this.warp(y.props.properties);
-      else if (y.props.type == "item")
-        this.pickupItem(y);
     }
+    if (y.props.type == "map")
+        this.pickupItem(y);
 
     // show tooltip if available
     if (y.props.properties) {
@@ -377,6 +410,55 @@ export default class extends Phaser.State {
       null,
       this
     );
+  }
+
+  canPlaceTile(dst_tile, dst_x, dst_y) {
+    var tiles = [
+      tileAt(dst_x,dst_y-1),
+      tileAt(dst_x,dst_y+1),
+      tileAt(dst_x-1,dst_y),
+      tileAt(dst_x+1,dst_y)
+    ]
+    var tiledef = config.levels;
+    var req_edges = [];
+
+    // up
+    if (tiles[0] == null)
+      req_edges[0] = null;
+    else
+      req_edges[0] = tiledef[tiles[0]].edges[1];
+
+    // down
+    if (tiles[1] == null)
+      req_edges[1] = null;
+    else
+      req_edges[1] = tiledef[tiles[1]].edges[0];
+
+    // left
+    if (tiles[2] == null)
+      req_edges[2] = null;
+    else
+      req_edges[2] = tiledef[tiles[2]].edges[3];
+
+    // right
+    if (tiles[3] == null)
+      req_edges[3] = null;
+    else
+      req_edges[3] = tiledef[tiles[3]].edges[2];
+
+    edges = tiledef[dst_tile].edges;
+    for (var i=0; i<4; i++) {
+      if (req_edges[i] != null &&
+          req_edges[i] != edges[i])
+        return false;
+    }
+    return true;
+  }
+
+  tileAt(x, y) {
+    if (x >= 0 && y >= 0 && x < 7 && y < 7)
+      return config.state.grid[y][x];
+    return null;
   }
 
   hideMap() {
