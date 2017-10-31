@@ -17,6 +17,7 @@ export default {
     c_ul: {asset: 'assets/maps/c_ul.json', desc: 'corner', edges: [1,0,1,0], minimap: 'assets/images/minimaps/c_ul.png'},
     c_bl: {asset: 'assets/maps/c_bl.json', desc: 'corner', edges: [0,1,1,0], minimap: 'assets/images/minimaps/c_bl.png'},
     c_br: {asset: 'assets/maps/c_br.json', desc: 'corner', edges: [0,1,0,1], minimap: 'assets/images/minimaps/c_br.png'},
+    c_ur: {asset: 'assets/maps/c_ur.json', desc: 'corner', edges: [1,1,0,1], minimap: 'assets/images/minimaps/c_ur.png'},
     t_u: {asset: 'assets/maps/t_u.json', desc: 'tee', edges: [1,0,1,1], minimap: 'assets/images/minimaps/t_u.png'},
     t_d: {asset: 'assets/maps/t_d.json', desc: 'tee', edges: [0,1,1,1], minimap: 'assets/images/minimaps/t_d.png'},
     t_l: {asset: 'assets/maps/t_l.json', desc: 'tee', edges: [1,1,1,0], minimap: 'assets/images/minimaps/t_l.png'},
@@ -25,6 +26,23 @@ export default {
     d_d: {asset: 'assets/maps/d_d.json', desc: 'deadend', edges: [0,1,0,0], minimap: 'assets/images/minimaps/d_d.png'},
     d_l: {asset: 'assets/maps/d_l.json', desc: 'deadend', edges: [0,0,1,0], minimap: 'assets/images/minimaps/d_l.png'},
     d_r: {asset: 'assets/maps/d_r.json', desc: 'deadend', edges: [0,0,0,1], minimap: 'assets/images/minimaps/d_r.png'},
+  },
+  rotations: {
+    x: 'x',
+    ud: 'lr',
+    lr: 'ud',
+    c_ul: 'c_ur',
+    c_bl: 'c_ul',
+    c_br: 'c_bl',
+    c_ur: 'c_br',
+    t_u: 't_r',
+    t_d: 't_l',
+    t_l: 't_u',
+    t_r: 't_d',
+    d_u: 'd_r',
+    d_d: 'd_l',
+    d_l: 'd_u',
+    d_r: 'd_d'
   },
   monsters: {
     // 'bear': {
@@ -49,6 +67,7 @@ export default {
   // playground map
   state: {
     new_game: true,
+    new_tile: true,
     map: 'sample',
     grid: [
       [null, null, null, null, null, null, null],
@@ -60,10 +79,8 @@ export default {
       [null, null, null, null, null, null, null],
     ],
     entrance: 'exit bottom',
-    equipped_map: null,
-    world_map: [
-      {world: [3,3], local: [50,50]}
-    ],
+    equipped_map: 'c_ul',
+    world_map: [],
     world_location: [3,3],
     tile_bag: []
   }

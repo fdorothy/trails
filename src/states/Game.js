@@ -29,14 +29,15 @@ export default class extends Phaser.State {
     this.initKeyboard();
     this.initTooltip();
 
+    if (config.state.new_tile) {
+      this.spawnMapPiece();
+      config.state.new_tile = false;
+    }
+    this.createWorldMap();
     this.spawnItems();
-    this.spawnMapPiece();
     this.spawnMonsters();
 
     this.emitterLayer = this.game.add.group();
-
-    // the world map
-    this.createWorldMap();
 
     this.drytimer = 0.0;
   }
@@ -144,14 +145,13 @@ export default class extends Phaser.State {
   spawnItems() {
     this.items = new Phaser.Group(this.game);
     this.map.spriteLayer.add(this.items);
-    if (config.state.items == null)
-      config.state.items = {};
     for (var i in config.state.world_map) {
       var obj = config.state.world_map[i];
       if (obj.world[0] == config.state.world_location[0] &&
           obj.world[1] == config.state.world_location[1])
         this.addMapPiece(obj.local[0]*32, obj.local[1]*32);
     }
+    this.updateEquippedMap();
   }
 
   spawnMapPiece() {
@@ -159,6 +159,16 @@ export default class extends Phaser.State {
     for (var i in this.map.objectMap) {
       var obj = this.map.objectMap[i];
       if (obj.type == 'poi') {
+        var local = [obj.x/32, obj.y/32];
+        var world = [
+          config.state.world_location[0],
+          config.state.world_location[1]
+        ];
+        obj = {local: local, world: world}
+        config.state.world_map.push(obj);
+        console.log("spawned");
+        console.log(obj);
+        return true;
       }
     }
   }
@@ -254,11 +264,27 @@ export default class extends Phaser.State {
     }
 
     this.world.fixedToCamera = true;
-    this.world.desiredX = config.gameWidth/2.0 - width*7/2.0;
+    this.world.desiredX = config.gameWidth/2.0 - width*9/2.0;
     this.world.cameraOffset.x = this.world.desiredX;
     this.world.cameraOffset.y = 5;
     this.world.visible = false;
     this.hideMap();
+  }
+
+  updateEquippedMap() {
+    var piece = 'map_unknown';
+    if (config.state.equipped_map) {
+      piece = config.state.equipped_map + '_map';
+    }
+    if (this.equipped)
+      this.equipped.destroy();
+    var w = this.worldMapTileSize;
+    this.equipped = new Phaser.Sprite(this.game, w*8, w*3.5, piece);
+    this.equipped.anchor.x = 0.5;
+    this.equipped.anchor.y = 0.5;
+    this.equipped.width = this.worldMapTileSize*1.2;
+    this.equipped.height = this.worldMapTileSize*1.2;
+    this.world.add(this.equipped);
   }
 
   addMapPiece(x, y) {
@@ -282,10 +308,11 @@ export default class extends Phaser.State {
     // pick a random tile to pickup
     var map = config.state.tile_bag.shift();
     config.state.equipped_map = map;
+    this.updateEquippedMap();
 
     // destroy old tile, and forget it
     sprite.destroy();
-    config.state.world_map = []
+    config.state.world_map = [];
   }
 
   shuffleArray(array) {
@@ -302,28 +329,95 @@ export default class extends Phaser.State {
   }
 
   trigger(x, y) {
-    if (this.spacebar.isDown) {
-      if (y.props.type == "exit")
-        this.warp(y.props.properties);
-    }
+    if (y.props.type == "exit")
+      this.warp(y.props.name);
     if (y.props.type == "map")
-        this.pickupItem(y);
+      this.pickupItem(y);
+  }
 
-    // show tooltip if available
-    if (y.props.properties) {
-      var tooltip = y.props.properties.tooltip;
-      if (tooltip != null) {
-	this.tooltip.text = tooltip;
+  warp(name) {
+    var info = this.warpInfo(name);
+    this.tooltip.text = info.message
+    if (this.spacebar.isDown && info.enabled) {
+      var p = info.location;
+      if (info.place) {
+        config.state.grid[p[1]][p[0]] = config.state.equipped_map;
+        config.state.equipped_map = null;
+        config.state.new_tile = true;
       }
+      config.state.entrance = info.entrance;
+      config.state.world_location[0] = p[0];
+      config.state.world_location[1] = p[1];
+      this.state.start("Game");
     }
   }
 
-  warp(props) {
-    if (props != null && config.levels[props.map] != null) {
-      config.state.map = props.map;
-      config.state.entrance = props.entrance;
-      this.state.start('Warp');
-    } else {
+  warpInfo(exit_name) {
+    var dst = [0,0];
+    var src = config.state.world_location;
+    var entrance = '';
+    switch(exit_name) {
+    case 'exit bottom':
+      dst = [src[0],src[1]+1];
+      entrance = 'exit top';
+      break;
+    case 'exit top':
+      dst = [src[0],src[1]-1];
+      entrance = 'exit bottom';
+      break;
+    case 'exit left':
+      dst = [src[0]-1,src[1]];
+      entrance = 'exit right';
+      break;
+    case 'exit right':
+      dst = [src[0]+1,src[1]];
+      entrance = 'exit left';
+      break;
+    default:
+      return {
+        enabled: false,
+        message: "bug! not an exit"
+      };
+      break;
+    }
+
+    if (dst[0] < 0 || dst[1] < 0 ||
+        dst[0] >= 7 || dst[1] >= 7)
+      return {
+        enabled: false,
+        message: "only wilderness lies beyond"
+      };
+
+    var grid = config.state.grid;
+    var tile = config.state.equipped_map;
+    if (grid[dst[1]][dst[0]] != null) {
+      return {
+        enabled: true,
+        entrance: entrance,
+        location: dst,
+        place: false,
+        message: "continue on path?"
+      };
+    } else if (tile != null) {
+      if (this.canPlaceTile(tile, dst[0], dst[1])) {
+        return {
+          enabled: true,
+          entrance: entrance,
+          location: dst,
+          place: true,
+          message: "place map piece and continue?"
+        };
+      } else {
+        return {
+          enabled: false,
+          message: "cannot place map piece, maybe rotate it?"
+        };
+      }
+    }
+    console.log(tile);
+    return {
+      enabled: false,
+      message: "find the map piece first"
     }
   }
 
@@ -397,6 +491,9 @@ export default class extends Phaser.State {
         this.hideMap();
       else
         this.showMap();
+    else if (x == 'r' || x == 'R')
+      if (this.mapVisible)
+        this.rotateMap();
   }
 
   checkMonsters() {
@@ -414,10 +511,10 @@ export default class extends Phaser.State {
 
   canPlaceTile(dst_tile, dst_x, dst_y) {
     var tiles = [
-      tileAt(dst_x,dst_y-1),
-      tileAt(dst_x,dst_y+1),
-      tileAt(dst_x-1,dst_y),
-      tileAt(dst_x+1,dst_y)
+      this.tileAt(dst_x,dst_y-1),
+      this.tileAt(dst_x,dst_y+1),
+      this.tileAt(dst_x-1,dst_y),
+      this.tileAt(dst_x+1,dst_y)
     ]
     var tiledef = config.levels;
     var req_edges = [];
@@ -446,7 +543,7 @@ export default class extends Phaser.State {
     else
       req_edges[3] = tiledef[tiles[3]].edges[2];
 
-    edges = tiledef[dst_tile].edges;
+    var edges = tiledef[dst_tile].edges;
     for (var i=0; i<4; i++) {
       if (req_edges[i] != null &&
           req_edges[i] != edges[i])
@@ -459,6 +556,14 @@ export default class extends Phaser.State {
     if (x >= 0 && y >= 0 && x < 7 && y < 7)
       return config.state.grid[y][x];
     return null;
+  }
+
+  rotateMap() {
+    var t = config.state.equipped_map;
+    if (t) {
+      config.state.equipped_map = config.rotations[t];
+      this.updateEquippedMap();
+    }
   }
 
   hideMap() {
