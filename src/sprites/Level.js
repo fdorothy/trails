@@ -33,6 +33,7 @@ export default class extends Phaser.Tilemap {
       if (name == spriteLayerName) {
         this.spriteLayer = this.game.add.group();
       }
+      layer.visible = info.visible;
     }
     if (this.spriteLayer == null)
       this.spriteLayer = this.game.add.group();

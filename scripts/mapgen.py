@@ -163,6 +163,17 @@ class Path(Layer):
 
     return False
 
+def grow_filter(src):
+  dst = src.copy()
+  size = src.shape
+  for y in range(size[1]):
+    for x in range(size[0]):
+      n = neighbors(x,y,src,size[1],size[0])
+      for v in n:
+        if v >= 1:
+          dst[y,x] = 1
+  return dst
+
 def tile_id(x,y):
   return y*16+x+1
 
@@ -269,6 +280,7 @@ def main(size, scale, angle, edge_mask, name, seed):
 
   trail = {}
   # up down left right
+  trail_water = tile_id(7,2)
   trail[tile4_idx(0,0,0,0)] = 0
   trail[tile4_idx(1,0,0,0)] = tile_id(5,8)
   trail[tile4_idx(0,1,0,0)] = tile_id(4,3)
@@ -366,12 +378,16 @@ def main(size, scale, angle, edge_mask, name, seed):
     for x in range(size[0]):
       val = 0
       if path.data[y,x] != 0:
-        n = neighbors(x,y,path.data,size[0],size[1])
-        n = [i != 0 for i in n]
-        idx = tile_n_idx(n)
-        if trail.has_key(idx):
-          val = trail[idx]
-          grass_decor_layer.data[x+y*size[0]] = 0
+        if steppes[y,x] == 1:
+          val = trail_water
+        else:
+          n = neighbors(x,y,path.data,size[0],size[1])
+          n = [i != 0 for i in n]
+          idx = tile_n_idx(n)
+          if trail.has_key(idx):
+            val = trail[idx]
+      if val != 0:
+        grass_decor_layer.data[x+y*size[0]] = 0
       pl.data.append(val)
   t.layers += [pl]
 
@@ -403,6 +419,29 @@ def main(size, scale, angle, edge_mask, name, seed):
         if idx >= len(marker):
           idx = 0
         visited.add(p)
+  t.layers += [sl]
+
+  # make the sprite speed layer
+  sl = tiled.TileLayer()
+  sl.name = "speed"
+  sl.width = size[0]
+  sl.height = size[1]
+  sl.data = [0]*(size[0]*size[1])
+  sl.visible = False
+  speed = grow_filter(path.data)
+  speed = grow_filter(speed)
+  for y in range(size[1]):
+    for x in range(size[0]):
+      v = 2
+      if steppes[y,x] <= 1:
+        if path.data[y,x] >= 1:
+          v = 2
+        else:
+          v = 1
+      else:
+        if speed[y,x] > 0:
+          v = 3
+      sl.data[x+y*size[0]] = v
   t.layers += [sl]
 
   # make the minimap png
