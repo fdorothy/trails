@@ -494,12 +494,44 @@ exports.default = {
   player: {
     scale: 1.2,
     initialSpeed: 50,
-    targetSpeed: 150,
+    targetSpeed: 300,
     groundAccel: 200,
     groundDeaccel: 500
   },
   levels: {
-    sample: { asset: 'assets/maps/sample.json', desc: 'sample map' }
+    sample: { asset: 'assets/maps/sample.json', desc: 'sample map' },
+    x: { asset: 'assets/maps/x.json', desc: 'cross', edges: [1, 1, 1, 1], minimap: 'assets/images/minimaps/x.png' },
+    ud: { asset: 'assets/maps/ud.json', desc: 'straight', edges: [1, 1, 0, 0], minimap: 'assets/images/minimaps/ud.png' },
+    lr: { asset: 'assets/maps/lr.json', desc: 'straight', edges: [0, 0, 1, 1], minimap: 'assets/images/minimaps/lr.png' },
+    c_ul: { asset: 'assets/maps/c_ul.json', desc: 'corner', edges: [1, 0, 1, 0], minimap: 'assets/images/minimaps/c_ul.png' },
+    c_bl: { asset: 'assets/maps/c_bl.json', desc: 'corner', edges: [0, 1, 1, 0], minimap: 'assets/images/minimaps/c_bl.png' },
+    c_br: { asset: 'assets/maps/c_br.json', desc: 'corner', edges: [0, 1, 0, 1], minimap: 'assets/images/minimaps/c_br.png' },
+    c_ur: { asset: 'assets/maps/c_ur.json', desc: 'corner', edges: [1, 1, 0, 1], minimap: 'assets/images/minimaps/c_ur.png' },
+    t_u: { asset: 'assets/maps/t_u.json', desc: 'tee', edges: [1, 0, 1, 1], minimap: 'assets/images/minimaps/t_u.png' },
+    t_d: { asset: 'assets/maps/t_d.json', desc: 'tee', edges: [0, 1, 1, 1], minimap: 'assets/images/minimaps/t_d.png' },
+    t_l: { asset: 'assets/maps/t_l.json', desc: 'tee', edges: [1, 1, 1, 0], minimap: 'assets/images/minimaps/t_l.png' },
+    t_r: { asset: 'assets/maps/t_r.json', desc: 'tee', edges: [1, 1, 0, 1], minimap: 'assets/images/minimaps/t_r.png' },
+    d_u: { asset: 'assets/maps/d_u.json', desc: 'deadend', edges: [1, 0, 0, 0], minimap: 'assets/images/minimaps/d_u.png' },
+    d_d: { asset: 'assets/maps/d_d.json', desc: 'deadend', edges: [0, 1, 0, 0], minimap: 'assets/images/minimaps/d_d.png' },
+    d_l: { asset: 'assets/maps/d_l.json', desc: 'deadend', edges: [0, 0, 1, 0], minimap: 'assets/images/minimaps/d_l.png' },
+    d_r: { asset: 'assets/maps/d_r.json', desc: 'deadend', edges: [0, 0, 0, 1], minimap: 'assets/images/minimaps/d_r.png' }
+  },
+  rotations: {
+    x: 'x',
+    ud: 'lr',
+    lr: 'ud',
+    c_ul: 'c_ur',
+    c_bl: 'c_ul',
+    c_br: 'c_bl',
+    c_ur: 'c_br',
+    t_u: 't_r',
+    t_d: 't_l',
+    t_l: 't_u',
+    t_r: 't_d',
+    d_u: 'd_r',
+    d_d: 'd_l',
+    d_l: 'd_u',
+    d_r: 'd_d'
   },
   monsters: {
     // 'bear': {
@@ -513,21 +545,24 @@ exports.default = {
   images: {
     fire: 'assets/images/fire.png',
     tiles: 'assets/images/tiles.png',
-    starfield: 'assets/images/starfield.png'
+    woodland_ground: 'assets/images/woodland_ground.png',
+    starfield: 'assets/images/starfield.png',
+    map_unknown: 'assets/images/map_unknown.png',
+    overlay: 'assets/images/overlay.png',
+    head: 'assets/images/head.png',
+    arrow: 'assets/images/arrow.png'
   },
   // playground map
   state: {
+    new_game: true,
+    new_tile: true,
     map: 'sample',
-    entrance: 'game_start',
-    equipped: 'forage',
-    items: [{
-      name: 'forage'
-    }, {
-      name: 'map'
-    }],
-    rescueTime: 0.0,
-    rescued: false,
-    deadTime: 999
+    grid: [[null, null, null, null, null, null, null], [null, null, null, null, null, null, null], [null, null, null, null, null, null, null], [null, null, null, 'x', null, null, null], [null, null, null, 't_l', null, null, null], [null, null, null, null, null, null, null], [null, null, null, null, null, null, null]],
+    entrance: 'exit bottom',
+    equipped_map: 'c_ul',
+    world_map: [],
+    world_location: [3, 3],
+    tile_bag: []
 
     // use for trying out maps
     // state: {
@@ -3255,9 +3290,6 @@ var _class = function (_Phaser$Sprite) {
     var _this = _possibleConstructorReturn(this, (_class.__proto__ || Object.getPrototypeOf(_class)).call(this, game, x, y, name));
 
     _this.name = name;
-    game.physics.arcade.enable(_this);
-    _this.body.collideWorldBounds = true;
-    _this.body.gravity.y = _config2.default.world.gravity;
     _this.anchor.setTo(0.5, 0.5);
     _this.emitter = game.add.emitter(x, y, 100);
     _this.emitter.makeParticles('diamond');
@@ -4674,6 +4706,7 @@ var _class = function (_Phaser$Tilemap) {
 
     _this.asset = asset;
 
+    // add in tilesets
     for (var i in _this.tilesets) {
       key = _this.tilesets[i].name;
       _this.addTilesetImage(key);
@@ -4682,7 +4715,6 @@ var _class = function (_Phaser$Tilemap) {
     // load all tile layers
     _this.layerMap = {};
     _this.boundaries = [];
-    _this.water = [];
     var spriteLayerName = "";
     if (_this.properties && _this.properties.spriteLayer) var spriteLayerName = _this.properties.spriteLayer;
     for (var i in _this.layers) {
@@ -4692,9 +4724,6 @@ var _class = function (_Phaser$Tilemap) {
       if (info.properties.collides) {
         _this.setCollisionBetween(1, 2000, true, name);
         _this.boundaries.push(layer);
-      } else if (info.properties.water) {
-        _this.setCollisionBetween(1, 2000, true, name);
-        _this.water.push(layer);
       }
       layer.alpha = info.alpha;
       layer.resizeWorld();
@@ -4702,6 +4731,7 @@ var _class = function (_Phaser$Tilemap) {
       if (name == spriteLayerName) {
         _this.spriteLayer = _this.game.add.group();
       }
+      layer.visible = info.visible;
     }
     if (_this.spriteLayer == null) _this.spriteLayer = _this.game.add.group();
 
@@ -5000,12 +5030,17 @@ var _class = function (_Phaser$Sprite) {
       this.body.velocity.y = vy;
     }
   }, {
-    key: 'stop',
-    value: function stop() {
+    key: 'stopLR',
+    value: function stopLR() {
       var dt = this.game.time.physicsElapsed;
       var vx = this.body.velocity.x;
-      var vy = this.body.velocity.y;
       this.body.velocity.x = this.slowdown(vx, dt);
+    }
+  }, {
+    key: 'stopUD',
+    value: function stopUD() {
+      var dt = this.game.time.physicsElapsed;
+      var vy = this.body.velocity.y;
       this.body.velocity.y = this.slowdown(vy, dt);
     }
   }, {
@@ -5223,42 +5258,63 @@ var _class = function (_Phaser$State) {
   }, {
     key: 'create',
     value: function create() {
+      // constants
+      this.worldMapTileSize = 64;
+
       this.game.physics.startSystem(_phaser2.default.Physics.ARCADE);
       this.game.time.advancedTiming = true;
-      this.itemPickupCooldown = 1.0;
 
-      this.backgroundLayer = this.game.add.group();
-      this.map = new _Level2.default({
-        game: this.game,
-        asset: _config2.default.state.map
-      });
+      if (_config2.default.state.new_game) this.resetGame();
+      this.loadMap();
+      this.loadPlayer();
+      this.initKeyboard();
+      this.initTooltip();
 
-      // background if needed
-      if (this.map.properties && this.map.properties.background) {
-        this.bg = new _phaser2.default.TileSprite(this.game, 0, 0, this.game.world.width * 3 / 2, this.game.world.height * 3 / 2, this.map.properties.background);
-        this.bg.tilePosition.y += 2;
-        this.bg.anchor.setTo(0.5, 0.5);
-        this.backgroundLayer.add(this.bg);
+      if (_config2.default.state.new_tile) {
+        this.spawnMapPiece();
+        _config2.default.state.new_tile = false;
       }
+      this.createWorldMap();
+      this.spawnItems();
+      this.spawnMonsters();
 
-      // create and add player
-      var entranceXY = this.getEntranceXY(_config2.default.state.entrance);
-      this.player = new _Player2.default({
-        game: this.game,
-        x: 0, //entranceXY[0],
-        y: 0, //entranceXY[1],
-        asset: 'hero'
-      });
-      this.player.body.setSize(this.player.body.width * 0.75, this.player.body.height, 0, 0);
-      this.map.spriteLayer.add(this.player);
-      this.game.camera.follow(this.player);
+      this.emitterLayer = this.game.add.group();
 
-      this.cursor = this.game.input.keyboard.createCursorKeys();
-      this.spacebar = this.game.input.keyboard.addKey(_phaser2.default.Keyboard.SPACEBAR);
-      this.dropkey = this.game.input.keyboard.addKey(_phaser2.default.Keyboard.D);
-      this.game.input.keyboard.addKeyCapture([_phaser2.default.Keyboard.LEFT, _phaser2.default.Keyboard.RIGHT, _phaser2.default.Keyboard.UP, _phaser2.default.Keyboard.DOWN, _phaser2.default.Keyboard.SPACEBAR]);
-
-      // tooltip that appears above items
+      this.drytimer = 0.0;
+    }
+  }, {
+    key: 'initKeyboard',
+    value: function initKeyboard() {
+      var kbrd = this.game.input.keyboard;
+      this.cursor = kbrd.createCursorKeys();
+      this.spacebar = kbrd.addKey(_phaser2.default.Keyboard.SPACEBAR);
+      kbrd.addCallbacks(this, null, null, this.onKey);
+      kbrd.addKeyCapture([_phaser2.default.Keyboard.LEFT, _phaser2.default.Keyboard.RIGHT, _phaser2.default.Keyboard.UP, _phaser2.default.Keyboard.DOWN, _phaser2.default.Keyboard.SPACEBAR]);
+    }
+  }, {
+    key: 'resetGame',
+    value: function resetGame() {
+      _config2.default.state.new_game = false;
+      var bag = [];
+      this.addToBag(bag, 'x', 3);
+      this.addToBag(bag, 'ud', 14);
+      this.addToBag(bag, 'c_ul', 14);
+      this.addToBag(bag, 't_u', 9);
+      this.addToBag(bag, 'd_u', 4);
+      this.shuffleArray(bag);
+      console.log(bag);
+      _config2.default.state.tile_bag = bag;
+    }
+  }, {
+    key: 'addToBag',
+    value: function addToBag(bag, piece, count) {
+      for (var i = 0; i < count; i++) {
+        bag.push(piece);
+      }
+    }
+  }, {
+    key: 'initTooltip',
+    value: function initTooltip() {
       var style = {
         font: 'bold 16px Belgrano',
         fill: '#000',
@@ -5267,68 +5323,12 @@ var _class = function (_Phaser$State) {
         boundsAlignH: "center",
         boundsAlignV: "middle"
       };
-
-      this.tooltip = this.add.text(this.player.x, this.player.y, '', style);
+      this.tooltip = this.add.text(0, 0, '', style);
       this.tooltip.anchor.setTo(0.5, 0.5);
-
-      // message that appears in center of screen
-      this.message = this.add.text(0, 0, '', style);
-      this.message.anchor.setTo(0.5, 0.5);
-      this.messageTime = 0.0;
-
-      this.emitterLayer = this.game.add.group();
-
-      // spawn items
-      this.items = new _phaser2.default.Group(this.game);
-      this.map.spriteLayer.add(this.items);
-      if (_config2.default.state.items == null) _config2.default.state.items = {};
-      for (var key in _config2.default.state.items) {
-        var obj = _config2.default.state.items[key];
-        if (obj != "equipped" && obj.map == this.map.asset) {
-          this.spawnItem(key, obj.x, obj.y);
-        }
-      }
-      for (var key in this.map.allObjects) {
-        var obj = this.map.allObjects[key];
-        if (obj.type == "item_spawn") {
-          if (_config2.default.state.items[obj.name] == null) {
-            this.spawnItem(obj.name, obj.x + obj.width / 2.0, obj.y + obj.height / 2.0);
-          }
-        }
-      }
-
-      // spawn monsters
-      this.monsters = new _phaser2.default.Group(this.game);
-      this.map.spriteLayer.add(this.monsters);
-      for (var key in this.map.allObjects) {
-        var monster = this.map.allObjects[key];
-        if (monster.type == "monster") {
-          var sprite = new _Monster2.default({
-            game: this.game,
-            x: monster.x + monster.width / 2.0,
-            y: monster.y + monster.height / 2.0,
-            info: monster.properties
-          });
-          this.monsters.add(sprite);
-        }
-      }
-
-      // show how long we have to solve the game
-      this.hud = this.game.add.group();
-      this.hud.fixedToCamera = true;
-
-      var style = {
-        font: 'bold 16px Belgrano',
-        fill: '#900',
-        align: 'center',
-        boundsAlignH: "center",
-        boundsAlignV: "middle"
-      };
-      this.deadTime = new _phaser2.default.Text(this.game, this.camera.width / 2, 0, _config2.default.state.deadTime, style);
-      this.hud.add(this.deadTime);
-      this.deadTime.anchor.setTo(0.5, 0);
-
-      // music!
+    }
+  }, {
+    key: 'initSound',
+    value: function initSound() {
       if (game.music == null) {
         game.music = {};
       }
@@ -5354,43 +5354,182 @@ var _class = function (_Phaser$State) {
         fire: this.game.add.audio('fire_audio')
       };
       this.player.sfx = this.sfx;
-
-      this.drytimer = 0.0;
     }
   }, {
-    key: 'spawnItem',
-    value: function spawnItem(name, x, y) {
-      var sprite = new _Item2.default({
+    key: 'loadMap',
+    value: function loadMap() {
+      var pos = _config2.default.state.world_location;
+      var name = _config2.default.state.grid[pos[1]][pos[0]];
+      this.map = new _Level2.default({
         game: this.game,
-        x: x,
-        y: y,
-        name: name
+        asset: name
       });
-      sprite.props = { name: name, type: "item", properties: { tooltip: name } };
-      this.items.add(sprite);
-      this.emitterLayer.add(sprite.emitter);
-      this.updateItemState(sprite);
-      return sprite;
     }
   }, {
-    key: 'updateItemState',
-    value: function updateItemState(sprite) {
-      _config2.default.state.items[sprite.props.name] = {
-        map: this.map.asset,
-        x: sprite.x,
-        y: sprite.y
-      };
+    key: 'loadPlayer',
+    value: function loadPlayer() {
+      var entranceXY = this.getEntranceXY(_config2.default.state.entrance);
+      this.player = new _Player2.default({
+        game: this.game,
+        x: entranceXY[0],
+        y: entranceXY[1],
+        asset: 'hero'
+      });
+      this.player.body.setSize(this.player.body.width * 0.75, this.player.body.height, 0, 0);
+      this.map.spriteLayer.add(this.player);
+      this.game.camera.follow(this.player);
+    }
+  }, {
+    key: 'spawnItems',
+    value: function spawnItems() {
+      this.items = new _phaser2.default.Group(this.game);
+      this.map.spriteLayer.add(this.items);
+      for (var i in _config2.default.state.world_map) {
+        var obj = _config2.default.state.world_map[i];
+        if (obj.world[0] == _config2.default.state.world_location[0] && obj.world[1] == _config2.default.state.world_location[1]) this.addMapPiece(obj.local[0] * 32, obj.local[1] * 32);
+      }
+      this.updateEquippedMap();
+    }
+  }, {
+    key: 'spawnMapPiece',
+    value: function spawnMapPiece() {
+      var poi = [];
+      for (var i in this.map.objectMap) {
+        var obj = this.map.objectMap[i];
+        if (obj.type == 'poi') {
+          var local = [obj.x / 32, obj.y / 32];
+          var world = [_config2.default.state.world_location[0], _config2.default.state.world_location[1]];
+          obj = { local: local, world: world };
+          _config2.default.state.world_map.push(obj);
+          console.log("spawned");
+          console.log(obj);
+          return true;
+        }
+      }
+    }
+  }, {
+    key: 'spawnMonsters',
+    value: function spawnMonsters() {
+      // spawn monsters
+      this.monsters = new _phaser2.default.Group(this.game);
+      this.map.spriteLayer.add(this.monsters);
+      for (var key in this.map.allObjects) {
+        var monster = this.map.allObjects[key];
+        if (monster.type == "monster") {
+          var sprite = new _Monster2.default({
+            game: this.game,
+            x: monster.x + monster.width / 2.0,
+            y: monster.y + monster.height / 2.0,
+            info: monster.properties
+          });
+          this.monsters.add(sprite);
+        }
+      }
+    }
+  }, {
+    key: 'createWorldMap',
+    value: function createWorldMap() {
+      var width = this.worldMapTileSize;
+      this.world = this.game.add.group();
+      for (var i in _config2.default.state.grid) {
+        var row = _config2.default.state.grid[i];
+        for (var j in row) {
+          var cell = row[j];
+          var minimap = "map_unknown";
+          if (cell != null) {
+            minimap = cell + '_map';
+          }
+          var sprite = new _phaser2.default.Sprite(this.game, j * width, i * width, minimap);
+          sprite.width = width;
+          sprite.height = width;
+          this.world.add(sprite);
+        }
+      }
+
+      // add in the overlay to show our current
+      // position on the world-map
+      var x = _config2.default.state.world_location[0] * width;
+      var y = _config2.default.state.world_location[1] * width;
+      this.overlay = new _phaser2.default.Sprite(this.game, x, y, 'overlay');
+      this.overlay.alpha = 0.0;
+      this.world.add(this.overlay);
+      var tween = game.add.tween(this.overlay).to({ alpha: 1 }, 2000, "Linear", true, 0, -1, true);
+
+      // add the sprite to represent current position
+      this.worldHead = new _phaser2.default.Sprite(this.game, x + width / 2, y + width / 2, 'head');
+      this.worldHead.anchor.x = 0.5;
+      this.worldHead.anchor.y = 0.5;
+      this.world.add(this.worldHead);
+
+      // add sprites for map pieces
+      this.worldItems = [];
+      for (i in _config2.default.state.world_map) {
+        var piece = _config2.default.state.world_map[i];
+        var x = piece.world[0] * width + piece.local[0] * width / this.map.width;
+        var y = piece.world[1] * width + piece.local[1] * width / this.map.height;
+        var sprite = new _phaser2.default.Sprite(this.game, x, y, 'arrow');
+        sprite.anchor.x = 0.5;
+        sprite.anchor.y = 1.0;
+        var tween = game.add.tween(sprite).to({ y: y - 5 }, 650, _phaser2.default.Easing.Bounce.InOut, true, 0, -1, true);
+        this.world.add(sprite);
+      }
+
+      this.world.fixedToCamera = true;
+      this.world.desiredX = _config2.default.gameWidth / 2.0 - width * 9 / 2.0;
+      this.world.cameraOffset.x = this.world.desiredX;
+      this.world.cameraOffset.y = 5;
+      this.world.visible = false;
+      this.hideMap();
+    }
+  }, {
+    key: 'updateEquippedMap',
+    value: function updateEquippedMap() {
+      var piece = 'map_unknown';
+      if (_config2.default.state.equipped_map) {
+        piece = _config2.default.state.equipped_map + '_map';
+      }
+      if (this.equipped) this.equipped.destroy();
+      var w = this.worldMapTileSize;
+      this.equipped = new _phaser2.default.Sprite(this.game, w * 8, w * 3.5, piece);
+      this.equipped.anchor.x = 0.5;
+      this.equipped.anchor.y = 0.5;
+      this.equipped.width = this.worldMapTileSize * 1.2;
+      this.equipped.height = this.worldMapTileSize * 1.2;
+      this.world.add(this.equipped);
+    }
+  }, {
+    key: 'addMapPiece',
+    value: function addMapPiece(x, y) {
+      var sprite = new _phaser2.default.Sprite(this.game, x, y, 'map_unknown');
+      sprite.props = { type: 'map' };
+      sprite.width = 32;
+      sprite.height = 32;
+      this.game.physics.enable(sprite, _phaser2.default.Physics.ARCADE);
+      this.items.add(sprite);
+      return sprite;
     }
   }, {
     key: 'pickupItem',
     value: function pickupItem(sprite) {
-      if (this.itemPickupCooldown <= 0.0) {
-        this.sfx.pickup.play();
-        _config2.default.state.equipped = sprite.props.name;
-        _config2.default.state.items.add({ name: sprite.props.name });
-        sprite.destroy();
-        _config2.default.state.items[sprite.props.name] = "equipped";
-        this.itemPickupCooldown = 1.0;
+      //this.sfx.pickup.play();
+
+      // pick a random tile to pickup
+      var map = _config2.default.state.tile_bag.shift();
+      _config2.default.state.equipped_map = map;
+      this.updateEquippedMap();
+
+      // destroy old tile, and forget it
+      sprite.destroy();
+      _config2.default.state.world_map = [];
+    }
+  }, {
+    key: 'shuffleArray',
+    value: function shuffleArray(array) {
+      for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var _ref = [array[j], array[i]];
+        array[i] = _ref[0];
+        array[j] = _ref[1];
       }
     }
   }, {
@@ -5403,138 +5542,220 @@ var _class = function (_Phaser$State) {
   }, {
     key: 'trigger',
     value: function trigger(x, y) {
-      if (y.props.type == "exit") {
-        this.warp(y.props.properties);
-      } else if (y.props.type == "item") {
-        if (this.spacebar.isDown) {
-          this.pickupItem(y);
-        }
-      } else if (y.props.type == "door") {
-        if (this.spacebar.isDown) {
-          this.warp(y.props.properties);
-        }
-      }
-
-      // show tooltip if available
-      if (y.props.properties) {
-        var tooltip = y.props.properties.tooltip;
-        if (tooltip != null) {
-          this.tooltip.text = tooltip;
-          this.tooltip.x = (y.left + y.right) / 2.0;
-          this.tooltip.y = y.bottom - 64;
-        }
-      }
+      if (y.props.type == "exit") this.warp(y.props.name);
+      if (y.props.type == "map") this.pickupItem(y);
     }
   }, {
     key: 'warp',
-    value: function warp(props) {
-      if (props != null && _config2.default.levels[props.map] != null) {
-        _config2.default.state.map = props.map;
-        _config2.default.state.entrance = props.entrance;
-        this.state.start('Warp');
-      } else {
-        this.setMessageText("cannot fit");
+    value: function warp(name) {
+      var info = this.warpInfo(name);
+      this.tooltip.text = info.message;
+      if (this.spacebar.isDown && info.enabled) {
+        var p = info.location;
+        if (info.place) {
+          _config2.default.state.grid[p[1]][p[0]] = _config2.default.state.equipped_map;
+          _config2.default.state.equipped_map = null;
+          _config2.default.state.new_tile = true;
+        }
+        _config2.default.state.entrance = info.entrance;
+        _config2.default.state.world_location[0] = p[0];
+        _config2.default.state.world_location[1] = p[1];
+        this.state.start("Game");
       }
     }
   }, {
-    key: 'setMessageText',
-    value: function setMessageText(text) {
-      if (text != this.message.text) {
-        this.message.text = text;
-        this.messageTime = 5.0;
-        this.message.visible = true;
+    key: 'warpInfo',
+    value: function warpInfo(exit_name) {
+      var dst = [0, 0];
+      var src = _config2.default.state.world_location;
+      var entrance = '';
+      switch (exit_name) {
+        case 'exit bottom':
+          dst = [src[0], src[1] + 1];
+          entrance = 'exit top';
+          break;
+        case 'exit top':
+          dst = [src[0], src[1] - 1];
+          entrance = 'exit bottom';
+          break;
+        case 'exit left':
+          dst = [src[0] - 1, src[1]];
+          entrance = 'exit right';
+          break;
+        case 'exit right':
+          dst = [src[0] + 1, src[1]];
+          entrance = 'exit left';
+          break;
+        default:
+          return {
+            enabled: false,
+            message: "bug! not an exit"
+          };
+          break;
       }
+
+      if (dst[0] < 0 || dst[1] < 0 || dst[0] >= 7 || dst[1] >= 7) return {
+        enabled: false,
+        message: "only wilderness lies beyond"
+      };
+
+      var grid = _config2.default.state.grid;
+      var tile = _config2.default.state.equipped_map;
+      if (grid[dst[1]][dst[0]] != null) {
+        return {
+          enabled: true,
+          entrance: entrance,
+          location: dst,
+          place: false,
+          message: "continue on path?"
+        };
+      } else if (tile != null) {
+        if (this.canPlaceTile(tile, dst[0], dst[1])) {
+          return {
+            enabled: true,
+            entrance: entrance,
+            location: dst,
+            place: true,
+            message: "place map piece and continue?"
+          };
+        } else {
+          return {
+            enabled: false,
+            message: "cannot place map piece, maybe rotate it?"
+          };
+        }
+      }
+      console.log(tile);
+      return {
+        enabled: false,
+        message: "find the map piece first"
+      };
     }
   }, {
     key: 'getEntranceXY',
     value: function getEntranceXY(entrance_name) {
       var entrance = this.map.objectMap[entrance_name];
-      return [0, 0];
-      //return [entrance.x+entrance.width/2.0,
-      //entrance.y+entrance.height/2.0]
+      return [entrance.x + entrance.width / 2.0, entrance.y + entrance.height / 2.0];
     }
   }, {
     key: 'update',
     value: function update() {
+      this.resetTooltip();
+      this.checkCollision();
+      this.checkItems();
+      this.checkTriggers();
+      this.checkMonsters();
+      this.checkKeys();
+    }
+  }, {
+    key: 'resetTooltip',
+    value: function resetTooltip() {
+      this.tooltip.text = '';
+      this.tooltip.x = this.player.x;
+      this.tooltip.y = this.player.y - 32;
+    }
+  }, {
+    key: 'checkCollision',
+    value: function checkCollision() {
+      game.physics.arcade.collide(this.player, this.map.boundaries);
+    }
+  }, {
+    key: 'checkItems',
+    value: function checkItems() {
+      game.physics.arcade.overlap(this.player, this.items, this.trigger, null, this);
+    }
+  }, {
+    key: 'checkTriggers',
+    value: function checkTriggers() {
+      game.physics.arcade.overlap(this.player, this.map.triggers, this.trigger, null, this);
+    }
+  }, {
+    key: 'checkKeys',
+    value: function checkKeys() {
+      if (this.cursor.left.isDown) this.player.moveLeft();else if (this.cursor.right.isDown) this.player.moveRight();else this.player.stopLR();
+
+      if (this.cursor.up.isDown) this.player.moveUp();else if (this.cursor.down.isDown) this.player.moveDown();else this.player.stopUD();
+    }
+  }, {
+    key: 'onKey',
+    value: function onKey(x) {
+      if (x == 'm' || x == 'M') {
+        if (this.mapVisible) this.hideMap();else this.showMap();
+      } else if (x == 'r' || x == 'R') if (this.mapVisible) this.rotateMap();
+    }
+  }, {
+    key: 'checkMonsters',
+    value: function checkMonsters() {
       var _this2 = this;
 
-      var dt = this.game.time.physicsElapsed;
-
-      // reduce the rescue time if set
-      if (_config2.default.state.rescueTime > 0.0) {
-        _config2.default.state.rescueTime -= dt;
-      } else {
-        _config2.default.state.rescueTime = 0.0;
-      }
-
-      // reduce and check dead time
-      if (_config2.default.state.deadTime <= 0.0) {
-        this.state.start("GameOver");
-      } else {
-        _config2.default.state.deadTime -= dt;
-        var t = _config2.default.state.deadTime.toFixed(0);
-        this.deadTime.text = t;
-      }
-
-      // switch to the game over screen if we won
-      if (_config2.default.state.rescueTime == 0.0 && _config2.default.state.rescued) {
-        this.state.start("GameOver");
-      }
-
-      // set our message text to center of screen
-      this.updateMessage(dt);
-
-      // clear the tooltip and message texts
-      this.tooltip.text = '';
-
-      if (this.itemPickupCooldown > 0.0) this.itemPickupCooldown -= dt;
-      game.physics.arcade.collide([this.player, this.monsters, this.items], this.map.boundaries);
-
-      var inwater = this.player.underwater;
-      this.player.underwater = false;
-      for (var idx in this.map.water) {
-        var layer = this.map.water[idx];
-        var tiles = layer.getTiles(this.player.x - 16, this.player.y - 16 - this.player.height / 2.0, 32, 32);
-        this.player.underwater = tiles.filter(function (x) {
-          return x.index != -1;
-        }).length > 0;
-      }
-      if (inwater != this.player.underwater && this.drytimer > 0.25) {
-        this.sfx.splash.play();
-      }
-      if (this.player.underwater) this.drytimer = 0.0;else this.drytimer += dt;
-
-      game.physics.arcade.overlap(this.player, this.items, this.trigger, null, this);
-      game.physics.arcade.overlap(this.player, this.map.triggers, this.trigger, null, this);
       game.physics.arcade.overlap(this.player, this.monsters, function (x, y) {
         _this2.sfx.death.play();
         _this2.state.start("GameOver");
       }, null, this);
+    }
+  }, {
+    key: 'canPlaceTile',
+    value: function canPlaceTile(dst_tile, dst_x, dst_y) {
+      var tiles = [this.tileAt(dst_x, dst_y - 1), this.tileAt(dst_x, dst_y + 1), this.tileAt(dst_x - 1, dst_y), this.tileAt(dst_x + 1, dst_y)];
+      var tiledef = _config2.default.levels;
+      var req_edges = [];
 
-      this.player.stop();
-      if (this.cursor.left.isDown) {
-        this.player.moveLeft();
-      } else if (this.cursor.right.isDown) {
-        this.player.moveRight();
+      // up
+      if (tiles[0] == null) req_edges[0] = null;else req_edges[0] = tiledef[tiles[0]].edges[1];
+
+      // down
+      if (tiles[1] == null) req_edges[1] = null;else req_edges[1] = tiledef[tiles[1]].edges[0];
+
+      // left
+      if (tiles[2] == null) req_edges[2] = null;else req_edges[2] = tiledef[tiles[2]].edges[3];
+
+      // right
+      if (tiles[3] == null) req_edges[3] = null;else req_edges[3] = tiledef[tiles[3]].edges[2];
+
+      var edges = tiledef[dst_tile].edges;
+      for (var i = 0; i < 4; i++) {
+        if (req_edges[i] != null && req_edges[i] != edges[i]) return false;
       }
-
-      if (this.cursor.up.isDown) {
-        this.player.moveUp();
-      } else if (this.cursor.down.isDown) {
-        this.player.moveDown();
+      return true;
+    }
+  }, {
+    key: 'tileAt',
+    value: function tileAt(x, y) {
+      if (x >= 0 && y >= 0 && x < 7 && y < 7) return _config2.default.state.grid[y][x];
+      return null;
+    }
+  }, {
+    key: 'rotateMap',
+    value: function rotateMap() {
+      var t = _config2.default.state.equipped_map;
+      if (t) {
+        _config2.default.state.equipped_map = _config2.default.rotations[t];
+        this.updateEquippedMap();
       }
     }
   }, {
-    key: 'updateMessage',
-    value: function updateMessage(dt) {
-      if (this.messageTime > 0.0) {
-        this.message.x = this.player.x;
-        this.message.y = this.player.y - 32;
-        this.messageTime -= dt;
-      } else {
-        this.message.text = '';
-        this.message.visible = false;
-      }
+    key: 'hideMap',
+    value: function hideMap() {
+      if (this.worldTween) this.worldTween.stop();
+      this.worldTween = game.add.tween(this.world.cameraOffset);
+      this.worldTween.to({ y: -500 }, 500, "Linear", true);
+      this.mapVisible = false;
+    }
+  }, {
+    key: 'showMap',
+    value: function showMap() {
+      if (this.worldTween) this.worldTween.stop();
+      this.worldTween = game.add.tween(this.world.cameraOffset);
+      this.worldTween.to({ y: 5 }, 500, "Linear", true);
+      this.world.visible = true;
+      this.mapVisible = true;
+
+      // update our location on the map
+      var width = this.worldMapTileSize;
+      var x = _config2.default.state.world_location[0] * width;
+      var y = _config2.default.state.world_location[1] * width;
+      this.worldHead.x = x + this.player.x * width / this.map.widthInPixels;
+      this.worldHead.y = y + this.player.y * width / this.map.heightInPixels;
     }
   }]);
 
@@ -5683,6 +5904,9 @@ var _class = function (_Phaser$State) {
       // load all tilemaps and tilesheets
       for (var key in _config2.default.levels) {
         this.load.tilemap(key, _config2.default.levels[key].asset, null, _phaser2.default.Tilemap.TILED_JSON);
+
+        // load the minimap as an image
+        this.load.image(key + '_map', _config2.default.levels[key].minimap);
       }
 
       for (var key in _config2.default.images) {
