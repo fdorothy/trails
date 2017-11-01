@@ -11,6 +11,8 @@ export default {
   },
   levels: {
     sample: {asset: 'assets/maps/sample.json', desc: 'sample map'},
+    cabin: {asset: 'assets/maps/cabin.json', desc: 'cross', edges: [1,1,1,1], minimap: 'assets/images/minimaps/cabin.png'},
+    ferry: {asset: 'assets/maps/ferry.json', desc: 'cross', edges: [1,1,1,1], minimap: 'assets/images/minimaps/ferry.png'},
     x: {asset: 'assets/maps/x.json', desc: 'cross', edges: [1,1,1,1], minimap: 'assets/images/minimaps/x.png'},
     ud: {asset: 'assets/maps/ud.json', desc: 'straight', edges: [1,1,0,0], minimap: 'assets/images/minimaps/ud.png'},
     lr: {asset: 'assets/maps/lr.json', desc: 'straight', edges: [0,0,1,1], minimap: 'assets/images/minimaps/lr.png'},
@@ -62,7 +64,8 @@ export default {
     map_unknown: 'assets/images/map_unknown.png',
     overlay: 'assets/images/overlay.png',
     head: 'assets/images/head.png',
-    arrow: 'assets/images/arrow.png'
+    arrow: 'assets/images/arrow.png',
+    house: 'assets/images/house.png'
   },
   // playground map
   state: {
@@ -71,14 +74,15 @@ export default {
     map: 'sample',
     grid: [
       [null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null],
-      [null, null, null, 'x',  null, null, null],
-      [null, null, null, 't_l', null, null, null],
-      [null, null, null, null, null, null, null],
+      [null, 'ferry', null, null, null, null, null],
+      [null, null, 'x', null, null, null, null],
+      [null, null, 'x', 'cabin',  null, null, null],
+      [null, null, null, 'x', null, null, null],
+      [null, null, null, 'x', 'x', 'cabin', null],
       [null, null, null, null, null, null, null],
     ],
     entrance: 'exit bottom',
+    child_following: false,
     equipped_map: 'c_ul',
     world_map: [],
     world_location: [3,3],

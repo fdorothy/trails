@@ -140,6 +140,27 @@ export default class extends Phaser.State {
     );
     this.map.spriteLayer.add(this.player);
     this.game.camera.follow(this.player);
+
+    // spawn the child if he is still following...
+    if (config.state.child_following)
+      this.spawnChild(this.player.x, this.player.y+32);
+  }
+
+  spawnChild(x, y) {
+    this.child = new Player({
+      game: this.game,
+      x: x,
+      y: y,
+      asset: 'hero'
+    })
+    this.child.width *= 0.75;
+    this.child.height *= 0.75;
+    this.child.body.setSize(
+      this.child.body.width * 0.75,
+      this.child.body.height * 0.5,
+      0, 0
+    );
+    this.map.spriteLayer.add(this.child);
   }
 
   spawnItems() {
@@ -152,6 +173,21 @@ export default class extends Phaser.State {
         this.addMapPiece(obj.local[0]*32, obj.local[1]*32);
     }
     this.updateEquippedMap();
+
+    // special case items
+    for (var i in this.map.objectMap) {
+      var obj = this.map.objectMap[i];
+      if (obj.type == 'cabin') {
+	console.log('adding house');
+	var s = new Phaser.Sprite(this.game, obj.x, obj.y, "house");
+	s.anchor.x = 0.5;
+	s.anchor.y = 1.0;
+	this.map.spriteLayer.add(s);
+      }
+      if (obj.type == 'child' && !config.state.child_folowing) {
+	this.spawnChild(obj.x+obj.width/2, obj.y+obj.height/2);
+      }
+    }
   }
 
   spawnMapPiece() {
@@ -333,6 +369,9 @@ export default class extends Phaser.State {
       this.warp(y.props.name);
     if (y.props.type == "map")
       this.pickupItem(y);
+    if (y.props.type == "child") {
+      config.state.child_following = true;
+    }
   }
 
   warp(name) {
@@ -433,6 +472,7 @@ export default class extends Phaser.State {
     this.checkItems();
     this.checkTriggers();
     this.checkMonsters();
+    this.updateChild();
     this.checkKeys();
   }
 
@@ -494,6 +534,25 @@ export default class extends Phaser.State {
     else if (x == 'r' || x == 'R')
       if (this.mapVisible)
         this.rotateMap();
+  }
+
+  updateChild() {
+    if (this.child && config.state.child_following) {
+      var d = 2*32;
+      if (this.child.x < this.player.x-d) {
+	this.child.moveRight();
+      } else if (this.child.x > this.player.x+d) {
+	this.child.moveLeft();
+      } else
+	this.child.stopLR();
+
+      if (this.child.y < this.player.y-d) {
+	this.child.moveDown();
+      } else if (this.child.y > this.player.y+d) {
+	this.child.moveUp();
+      } else
+	this.child.stopUD();
+    }
   }
 
   checkMonsters() {
