@@ -509,8 +509,28 @@ export default class extends Phaser.State {
     if (!this.exiting) {
       this.checkKeys();
       this.updateChild();
+      this.updateSpeed();
     } else {
       this.checkExiting();
+    }
+  }
+
+  updateSpeed() {
+    // get the tile we're under
+    var layer = this.map.speed;
+    var tiles = layer.getTiles(this.player.x, this.player.y, 5, 5);
+    switch (tiles[0].index) {
+    case 1:
+      this.player.speed = 0.1;
+      break;
+    case 2:
+      this.player.speed = 0.3;
+      break;
+    case 3:
+      this.player.speed = 1.0;
+      break;
+    default:
+      this.player.speed = 1.0;
     }
   }
 

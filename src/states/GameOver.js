@@ -9,7 +9,7 @@ export default class extends Phaser.State {
     var txt = 'you win!';
     this.text = this.add.text(
       this.game.width/2.0, this.game.height/2.0,
-      txt, { font: '24px Belgrano', fill: '#aa0000', align: 'center' })
+      txt, { font: '24px Belgrano', fill: '#aaaaaa', align: 'center' })
     this.text.alpha = 0.0;
     this.game.add.tween(this.text).to({alpha: 1}, 1000, "Linear", true);
     this.text.anchor.setTo(0.5, 0.5)

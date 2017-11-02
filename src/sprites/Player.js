@@ -7,7 +7,7 @@ export default class extends Phaser.Sprite {
     game.physics.arcade.enable(this);
     this.body.collideWorldBounds = true;
     var framenames = Phaser.Animation.generateFrameNames('run/', 0, 7);
-    this.animations.add('run', framenames, 10, true, false);
+    this.run = this.animations.add('run', framenames, 10, true, false);
     framenames = Phaser.Animation.generateFrameNames('idle/', 0, 11);
     this.animations.add('idle', framenames, 10, true, false);
     framenames = ['jump/jump.png'];
@@ -17,6 +17,7 @@ export default class extends Phaser.Sprite {
     this.anchor.setTo(0.5, 0.5);
     this.game.scaleModel = Phaser.ScaleManager.SHOW_ALL;
     this.scale.setTo(config.player.scale);
+    this.speed = 1.0;
   }
 
   update () {
@@ -46,10 +47,10 @@ export default class extends Phaser.Sprite {
     var dt = this.game.time.physicsElapsed;
     var accel = config.player.groundAccel;
     var vx = this.body.velocity.x - accel * dt;
-    if (vx < -config.player.targetSpeed) {
-      vx = -config.player.targetSpeed;
-    } else if (vx > -config.player.initialSpeed) {
-      vx = -config.player.initialSpeed;
+    if (vx < -config.player.targetSpeed*this.speed) {
+      vx = -config.player.targetSpeed*this.speed;
+    } else if (vx > -config.player.initialSpeed*this.speed) {
+      vx = -config.player.initialSpeed*this.speed;
     }
     this.body.velocity.x = vx;
     if (this.scale.x > 0)
@@ -61,10 +62,10 @@ export default class extends Phaser.Sprite {
     var dt = this.game.time.physicsElapsed;
     var accel = config.player.groundAccel;
     var vx = this.body.velocity.x + accel * dt;
-    if (vx > config.player.targetSpeed) {
-      vx = config.player.targetSpeed;
-    } else if (vx < config.player.initialSpeed) {
-      vx = config.player.initialSpeed;
+    if (vx > config.player.targetSpeed*this.speed) {
+      vx = config.player.targetSpeed*this.speed;
+    } else if (vx < config.player.initialSpeed*this.speed) {
+      vx = config.player.initialSpeed*this.speed;
     }
     this.body.velocity.x = vx;
     if (this.scale.x < 0)
@@ -76,10 +77,10 @@ export default class extends Phaser.Sprite {
     var dt = this.game.time.physicsElapsed;
     var accel = config.player.groundAccel;
     var vy = this.body.velocity.y + accel * dt;
-    if (vy > config.player.targetSpeed) {
-      vy = config.player.targetSpeed;
-    } else if (vy < config.player.initialSpeed) {
-      vy = config.player.initialSpeed;
+    if (vy > config.player.targetSpeed*this.speed) {
+      vy = config.player.targetSpeed*this.speed;
+    } else if (vy < config.player.initialSpeed*this.speed) {
+      vy = config.player.initialSpeed*this.speed;
     }
     this.body.velocity.y = vy;
     this.movingUD = true;
@@ -89,10 +90,10 @@ export default class extends Phaser.Sprite {
     var dt = this.game.time.physicsElapsed;
     var accel = config.player.groundAccel;
     var vy = this.body.velocity.y - accel * dt;
-    if (vy < -config.player.targetSpeed) {
-      vy = -config.player.targetSpeed;
-    } else if (vy > -config.player.initialSpeed) {
-      vy = -config.player.initialSpeed;
+    if (vy < -config.player.targetSpeed*this.speed) {
+      vy = -config.player.targetSpeed*this.speed;
+    } else if (vy > -config.player.initialSpeed*this.speed) {
+      vy = -config.player.initialSpeed*this.speed;
     }
     this.body.velocity.y = vy;
     this.movingUD = true;
