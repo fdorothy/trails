@@ -16,7 +16,7 @@ export default class extends Phaser.State {
   }
 
   create () {
-    this.camera.flash('#000000', 3000)
+    this.camera.flash('#000000', 1000)
 
     // constants
     this.worldMapTileSize = 64;
