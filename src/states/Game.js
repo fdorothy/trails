@@ -22,24 +22,25 @@ export default class extends Phaser.State {
     this.game.physics.startSystem(Phaser.Physics.ARCADE);
     this.game.time.advancedTiming = true;
 
-    if (config.state.new_game)
+    this.exiting = false
+    if (config.state.new_game) {
       this.resetGame();
+      this.playIntro = true;
+    } else {
+      this.playIntro = false;
+    }
     this.loadMap();
-    this.loadPlayer();
-    this.initKeyboard();
-    this.initTooltip();
-
     if (config.state.new_tile) {
       this.spawnMapPiece();
       config.state.new_tile = false;
     }
     this.createWorldMap();
     this.spawnItems();
-    this.spawnMonsters();
+    this.loadPlayer();
+    this.initKeyboard();
+    this.initTooltip();
 
     this.emitterLayer = this.game.add.group();
-
-    this.drytimer = 0.0;
   }
 
   initKeyboard() {
@@ -65,7 +66,6 @@ export default class extends Phaser.State {
     this.addToBag(bag, 't_u', 9);
     this.addToBag(bag, 'd_u', 4);
     this.shuffleArray(bag);
-    console.log(bag);
     config.state.tile_bag = bag;
   }
 
@@ -184,6 +184,15 @@ export default class extends Phaser.State {
 	s.anchor.y = 1.0;
 	this.map.spriteLayer.add(s);
       }
+      if (obj.type == 'boat') {
+	this.boat = new Phaser.Sprite(this.game, obj.x+obj.width/2, obj.y+obj.height, "boat");
+	this.boat.anchor.x = 0.5;
+	this.boat.anchor.y = 1.0;
+	this.boat.scale.x = -1;
+	this.boatGroup = new Phaser.Group(this.game);
+	this.boatGroup.add(this.boat);
+	this.map.spriteLayer.add(this.boatGroup);
+      }
       if (obj.type == 'child' && !config.state.child_folowing) {
 	this.spawnChild(obj.x+obj.width/2, obj.y+obj.height/2);
       }
@@ -195,18 +204,21 @@ export default class extends Phaser.State {
     for (var i in this.map.objectMap) {
       var obj = this.map.objectMap[i];
       if (obj.type == 'poi') {
-        var local = [obj.x/32, obj.y/32];
-        var world = [
-          config.state.world_location[0],
-          config.state.world_location[1]
-        ];
-        obj = {local: local, world: world}
-        config.state.world_map.push(obj);
-        console.log("spawned");
-        console.log(obj);
-        return true;
+	poi.push(obj);
       }
     }
+    this.shuffleArray(poi);
+    var obj = poi[0];
+    var local = [obj.x/32, obj.y/32];
+    var world = [
+      config.state.world_location[0],
+      config.state.world_location[1]
+    ];
+    obj = {local: local, world: world}
+    config.state.world_map.push(obj);
+    console.log("spawned");
+    console.log(obj);
+    return true;
   }
 
   spawnMonsters() {
@@ -369,8 +381,15 @@ export default class extends Phaser.State {
       this.warp(y.props.name);
     if (y.props.type == "map")
       this.pickupItem(y);
-    if (y.props.type == "child") {
+    if (y.props.type == "child")
       config.state.child_following = true;
+    if (y.props.type == "docks") {
+      this.docks = y;
+      if (config.state.child_following)
+	this.exiting = true;
+      else {
+	this.tooltip.text = "here's the boat, but where's junior?"
+      }
     }
   }
 
@@ -453,7 +472,6 @@ export default class extends Phaser.State {
         };
       }
     }
-    console.log(tile);
     return {
       enabled: false,
       message: "find the map piece first"
@@ -467,19 +485,37 @@ export default class extends Phaser.State {
   }
 
   update() {
+    var dt = this.game.time.physicsElapsed;
+    if (this.timer)
+      this.timer -= dt;
+
     this.resetTooltip();
+    if (this.playIntro)
+      if (this.playDialog(config.dialog.intro))
+	this.playIntro = false;
+
     this.checkCollision();
     this.checkItems();
     this.checkTriggers();
     this.checkMonsters();
-    this.updateChild();
-    this.checkKeys();
+    if (!this.exiting) {
+      this.checkKeys();
+      this.updateChild();
+    } else {
+      this.checkExiting();
+    }
   }
 
   resetTooltip() {
     this.tooltip.text = '';
-    this.tooltip.x = this.player.x;
-    this.tooltip.y = this.player.y - 32;
+    if (this.tooltip.follow == 'child') {
+      this.tooltip.x = this.child.x;
+      this.tooltip.y = this.child.y - 32;
+    }
+    else {
+      this.tooltip.x = this.player.x;
+      this.tooltip.y = this.player.y - 32;
+    }
   }
 
   checkCollision() {
@@ -514,15 +550,11 @@ export default class extends Phaser.State {
       this.player.moveLeft();
     else if (this.cursor.right.isDown)
       this.player.moveRight();
-    else
-      this.player.stopLR();
     
     if (this.cursor.up.isDown)
       this.player.moveUp();
     else if (this.cursor.down.isDown)
       this.player.moveDown();
-    else
-      this.player.stopUD();
   }
 
   onKey(x) {
@@ -539,19 +571,7 @@ export default class extends Phaser.State {
   updateChild() {
     if (this.child && config.state.child_following) {
       var d = 2*32;
-      if (this.child.x < this.player.x-d) {
-	this.child.moveRight();
-      } else if (this.child.x > this.player.x+d) {
-	this.child.moveLeft();
-      } else
-	this.child.stopLR();
-
-      if (this.child.y < this.player.y-d) {
-	this.child.moveDown();
-      } else if (this.child.y > this.player.y+d) {
-	this.child.moveUp();
-      } else
-	this.child.stopUD();
+      this.walkTo(this.child, this.player.x, this.player.y, d)
     }
   }
 
@@ -566,6 +586,152 @@ export default class extends Phaser.State {
       null,
       this
     );
+  }
+
+  walkTo(actor, x, y, d = 2*32) {
+    var moving = false;
+    if (actor.x < x-d) {
+      actor.moveRight();
+      moving=true;
+    } else if (actor.x > x+d) {
+      actor.moveLeft();
+      moving=true;
+    }
+
+    if (actor.y < this.player.y-d) {
+      actor.moveDown();
+      moving=true;
+    } else if (actor.y > y+d) {
+      actor.moveUp();
+      moving=true;
+    }
+
+    var vx = actor.body.velocity.x;
+    var vy = actor.body.velocity.y;
+    if (vx < -1.0 || vx > 1.0 ||
+        vy < -1.0 || vy > 1.0)
+      return true;
+    else
+      return moving;
+  }
+
+  checkExiting() {
+    if (this.exiting) {
+      if (!this.exitState) {
+	this.exitState = 1
+	this.player.body.velocity.x = 0;
+	this.player.body.velocity.y = 0;
+	this.child.body.velocity.x = 0;
+	this.child.body.velocity.y = 0;
+      }
+
+      switch (this.exitState) {
+      case 1:
+	this.exitWalkToDocks();
+	break;
+      case 2:
+	this.exitShowDialog();
+	break;
+      case 3:
+	this.exitGetOnBoat();
+	break;
+      case 4:
+	this.exitRowRowRow();
+	this.exitFadeOut();
+	break;
+      case 6:
+	this.state.start("Credits");
+	break;
+      }
+    }
+  }
+
+  exitWalkToDocks() {
+    var w = this.docks.props.width;
+    var h = this.docks.props.height;
+    var x = this.docks.props.x+w/2;
+    var y = this.docks.props.y+h/2;
+    var moving = this.walkTo(this.player, x-w/4, y, 1);
+    var moving2 = this.walkTo(this.child, x+w/4, y, 1);
+    if (!moving && !moving2) {
+      this.exitState += 1;
+      this.player.moveRight();
+      this.child.moveLeft();
+    }
+  }
+
+  exitShowDialog() {
+    if (this.playDialog(config.dialog.exit))
+      this.exitState += 1;
+  }
+
+  playDialog(dialog) {
+    if (!this.dialogIter)
+      this.dialogIter = 0;
+    var frame = dialog[this.dialogIter];
+    if (this.delay(frame.delay)) {
+      this.dialogIter += 1;
+    } else {
+      this.tooltip.text = frame.text;
+      this.tooltip.follow = frame.actor;
+    }
+    if (this.dialogIter >= dialog.length) {
+      this.dialogIter = null;
+      return true;
+    }
+    return false;
+  }
+
+  exitGetOnBoat() {
+    var w = -this.boat.width;
+    var h = this.boat.height;
+    var x = this.boat.x;
+    var y = this.boat.y-h/4;
+    var moving = this.walkTo(this.player, x-w/4, y, 1);
+    var moving2 = this.walkTo(this.child, x+w/4, y, 1);
+    if (!moving && !moving2 && this.delay(1)) {
+      this.exitState += 1;
+      this.player.moveLeft();
+      this.child.moveLeft();
+
+      var dx = x - this.player.x;
+      var dy = y - this.player.y;
+      //this.map.spriteLayer.remove(this.player);
+      //this.boatGroup.add(this.player);
+
+      var actors = [this.player, this.child, this.boat];
+      for (var i in actors) {
+	var actor = actors[i];
+	var tween = game.add.tween(actor).to(
+          {x: '-600'},
+          20000,
+          'Linear',
+          true,
+          0
+	);
+      }
+    }
+  }
+
+  exitRowRowRow() {
+    this.exitState +=1;
+  }
+
+  exitFadeOut() {
+    this.camera.fade('#000000', 10000);
+    this.camera.onFadeComplete.add(this.exitComplete, this);
+  }
+
+  exitComplete() {
+    this.state.start("GameOver");
+  }
+
+  delay(time) {
+    if (this.timer == null)
+      this.timer = time;
+    if (this.timer <= 0.0)
+      this.timer = null;
+    return this.timer == null;
   }
 
   canPlaceTile(dst_tile, dst_x, dst_y) {

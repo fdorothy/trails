@@ -151,9 +151,9 @@
                 {
                  "height":94,
                  "id":1,
-                 "name":"boarding",
+                 "name":"docks",
                  "rotation":0,
-                 "type":"boarding",
+                 "type":"docks",
                  "visible":true,
                  "width":280,
                  "x":1316,
@@ -211,8 +211,8 @@
                  "type":"boat",
                  "visible":true,
                  "width":56,
-                 "x":1428,
-                 "y":1666
+                 "x":1434,
+                 "y":1698
                 }],
          "opacity":1,
          "type":"objectgroup",

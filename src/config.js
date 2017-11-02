@@ -65,7 +65,8 @@ export default {
     overlay: 'assets/images/overlay.png',
     head: 'assets/images/head.png',
     arrow: 'assets/images/arrow.png',
-    house: 'assets/images/house.png'
+    house: 'assets/images/house.png',
+    boat: 'assets/images/boat2.png'
   },
   // playground map
   state: {
@@ -75,19 +76,37 @@ export default {
     grid: [
       [null, null, null, null, null, null, null],
       [null, 'ferry', null, null, null, null, null],
-      [null, null, 'x', null, null, null, null],
-      [null, null, 'x', 'cabin',  null, null, null],
-      [null, null, null, 'x', null, null, null],
-      [null, null, null, 'x', 'x', 'cabin', null],
+      [null, null, null, null, null, null, null],
+      [null, null, null, 'x',  null, null, null],
+      [null, null, null, null, null, null, null],
+      [null, null, null, null, null, 'cabin', null],
       [null, null, null, null, null, null, null],
     ],
-    entrance: 'exit bottom',
+    entrance: 'poi_1',
     child_following: false,
-    equipped_map: 'c_ul',
+    equipped_map: null,
     world_map: [],
     world_location: [3,3],
     tile_bag: []
-  }
+  },
+  dialog: {
+    intro: [
+      {actor: 'player', text: '', delay: 1},
+      {actor: 'player', text: "where'd my map go?", delay: 3},
+      {actor: 'player', text: '', delay: 1},
+      {actor: 'player', text: "where'd junior go!?", delay: 3},
+      {actor: 'player', text: '', delay: 1},
+      {actor: 'player', text: "the boat to town leaves soon", delay: 3},
+      {actor: 'player', text: '', delay: 1},
+      {actor: 'player', text: "I'd better find junior quickly", delay: 3}
+    ],
+    exit: [
+      {actor: 'player', text: 'whew! we made it', delay: 2},
+      {actor: 'child', text: 'my legs hurt', delay: 2},
+      {actor: 'player', text: '...', delay: 1},
+      {actor: 'player', text: 'lets get a move on', delay: 2}
+    ]
+  },
 
   // use for trying out maps
   // state: {

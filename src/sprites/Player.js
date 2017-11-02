@@ -29,6 +29,13 @@ export default class extends Phaser.Sprite {
       this.stopAnimation();
     }
 
+    if (!this.movingLR)
+      this.stopLR();
+    if (!this.movingUD)
+      this.stopUD();
+    this.movingLR = false;
+    this.movingUD = false;
+
     var dt = this.game.time.physicsElapsed;
     var drag = 0.1;
     this.body.velocity.y -= vy * dt * drag;
@@ -47,6 +54,7 @@ export default class extends Phaser.Sprite {
     this.body.velocity.x = vx;
     if (this.scale.x > 0)
       this.scale.x = -this.scale.x;
+    this.movingLR = true;
   }
 
   moveRight() {
@@ -61,6 +69,7 @@ export default class extends Phaser.Sprite {
     this.body.velocity.x = vx;
     if (this.scale.x < 0)
       this.scale.x = -this.scale.x;
+    this.movingLR = true;
   }
 
   moveDown() {
@@ -73,6 +82,7 @@ export default class extends Phaser.Sprite {
       vy = config.player.initialSpeed;
     }
     this.body.velocity.y = vy;
+    this.movingUD = true;
   }
 
   moveUp() {
@@ -85,6 +95,7 @@ export default class extends Phaser.Sprite {
       vy = -config.player.initialSpeed;
     }
     this.body.velocity.y = vy;
+    this.movingUD = true;
   }
 
   stopLR() {
