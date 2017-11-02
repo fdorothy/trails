@@ -6,7 +6,7 @@ export default class extends Phaser.State {
   preload () {}
 
   create () {
-    var txt = 'game over\nretry?';
+    var txt = 'you win!';
     this.text = this.add.text(
       this.game.width/2.0, this.game.height/2.0,
       txt, { font: '24px Belgrano', fill: '#aa0000', align: 'center' })
