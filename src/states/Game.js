@@ -16,6 +16,8 @@ export default class extends Phaser.State {
   }
 
   create () {
+    this.camera.flash('#000000', 3000)
+
     // constants
     this.worldMapTileSize = 64;
 
@@ -129,7 +131,7 @@ export default class extends Phaser.State {
     var entranceXY = this.getEntranceXY(config.state.entrance);
     this.player = new Player({
       game: this.game,
-      x: entranceXY[0],
+      x: entranceXY[0]+16,
       y: entranceXY[1],
       asset: 'hero'
     })
