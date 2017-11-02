@@ -66,7 +66,8 @@ export default {
     head: 'assets/images/head.png',
     arrow: 'assets/images/arrow.png',
     house: 'assets/images/house.png',
-    boat: 'assets/images/boat2.png'
+    boat: 'assets/images/boat2.png',
+    round_world: 'assets/images/round_world.png'
   },
   // playground map
   state: {
