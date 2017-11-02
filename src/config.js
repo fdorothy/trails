@@ -92,6 +92,11 @@ export default {
   dialog: {
     intro: [
       {actor: 'player', text: '', delay: 1},
+      {actor: 'player', text: '.', delay: 1},
+      {actor: 'player', text: '..', delay: 1},
+      {actor: 'player', text: '...', delay: 1},
+      {actor: 'player', text: 'uh oh', delay: 1},
+      {actor: 'player', text: '', delay: 1},
       {actor: 'player', text: "where'd my map go?", delay: 3},
       {actor: 'player', text: '', delay: 1},
       {actor: 'player', text: "where'd junior go!?", delay: 3},
@@ -100,11 +105,21 @@ export default {
       {actor: 'player', text: '', delay: 1},
       {actor: 'player', text: "I'd better find junior quickly", delay: 3}
     ],
+    found: [
+      {actor: 'child', text: 'where have you been all night?!', delay: 3},
+      {actor: 'player', text: "???", delay: 2},
+      {actor: 'player', text: "all night?", delay: 3},
+      {actor: 'child', text: "we're going to be late", delay: 3},
+      {actor: 'player', text: "well let's get moving!", delay: 3},
+      {actor: 'player', text: "hi ho, hi ho...", delay: 2},
+      {actor: 'child', text: "no singing", delay: 3},
+      {actor: 'player', text: "you're no fun", delay: 3}
+    ],
     exit: [
-      {actor: 'player', text: 'whew! we made it', delay: 2},
-      {actor: 'child', text: 'my legs hurt', delay: 2},
+      {actor: 'player', text: 'whew! we made it', delay: 3},
+      {actor: 'child', text: 'my legs hurt', delay: 3},
       {actor: 'player', text: '...', delay: 1},
-      {actor: 'player', text: 'lets get a move on', delay: 2}
+      {actor: 'player', text: 'lets get a move on', delay: 3}
     ]
   },
 

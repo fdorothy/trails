@@ -22,7 +22,7 @@ export default class extends Phaser.State {
     this.game.physics.startSystem(Phaser.Physics.ARCADE);
     this.game.time.advancedTiming = true;
 
-    this.exiting = false
+    this.exiting = false;
     if (config.state.new_game) {
       this.resetGame();
       this.playIntro = true;
@@ -381,8 +381,11 @@ export default class extends Phaser.State {
       this.warp(y.props.name);
     if (y.props.type == "map")
       this.pickupItem(y);
-    if (y.props.type == "child")
+    if (y.props.type == "child") {
+      if (!config.state.child_following)
+	this.playFound = true;
       config.state.child_following = true;
+    }
     if (y.props.type == "docks") {
       this.docks = y;
       if (config.state.child_following)
@@ -493,6 +496,9 @@ export default class extends Phaser.State {
     if (this.playIntro)
       if (this.playDialog(config.dialog.intro))
 	this.playIntro = false;
+    if (this.playFound)
+      if (this.playDialog(config.dialog.found))
+	this.playFound = false;
 
     this.checkCollision();
     this.checkItems();
