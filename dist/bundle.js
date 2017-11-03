@@ -500,6 +500,8 @@ exports.default = {
   },
   levels: {
     sample: { asset: 'assets/maps/sample.json', desc: 'sample map' },
+    cabin: { asset: 'assets/maps/cabin.json', desc: 'cross', edges: [1, 1, 1, 1], minimap: 'assets/images/minimaps/cabin.png' },
+    ferry: { asset: 'assets/maps/ferry.json', desc: 'cross', edges: [1, 1, 1, 1], minimap: 'assets/images/minimaps/ferry.png' },
     x: { asset: 'assets/maps/x.json', desc: 'cross', edges: [1, 1, 1, 1], minimap: 'assets/images/minimaps/x.png' },
     ud: { asset: 'assets/maps/ud.json', desc: 'straight', edges: [1, 1, 0, 0], minimap: 'assets/images/minimaps/ud.png' },
     lr: { asset: 'assets/maps/lr.json', desc: 'straight', edges: [0, 0, 1, 1], minimap: 'assets/images/minimaps/lr.png' },
@@ -550,50 +552,60 @@ exports.default = {
     map_unknown: 'assets/images/map_unknown.png',
     overlay: 'assets/images/overlay.png',
     head: 'assets/images/head.png',
-    arrow: 'assets/images/arrow.png'
+    arrow: 'assets/images/arrow.png',
+    house: 'assets/images/house.png',
+    boat: 'assets/images/boat2.png',
+    round_world: 'assets/images/round_world.png'
   },
   // playground map
   state: {
     new_game: true,
     new_tile: true,
     map: 'sample',
-    grid: [[null, null, null, null, null, null, null], [null, null, null, null, null, null, null], [null, null, null, null, null, null, null], [null, null, null, 'x', null, null, null], [null, null, null, 't_l', null, null, null], [null, null, null, null, null, null, null], [null, null, null, null, null, null, null]],
-    entrance: 'exit bottom',
-    equipped_map: 'c_ul',
+    grid: [[null, null, null, null, null, null, null], [null, 'ferry', null, null, null, null, null], [null, null, null, null, null, null, null], [null, null, null, 'x', null, null, null], [null, null, null, null, null, null, null], [null, null, null, null, null, 'cabin', null], [null, null, null, null, null, null, null]],
+    entrance: 'poi_1',
+    child_following: false,
+    equipped_map: null,
     world_map: [],
     world_location: [3, 3],
     tile_bag: []
+  },
+  dialog: {
+    intro: [{ actor: 'player', text: '', delay: 1 }, { actor: 'player', text: '.', delay: 1 }, { actor: 'player', text: '..', delay: 1 }, { actor: 'player', text: '...', delay: 1 }, { actor: 'player', text: 'uh oh', delay: 1 }, { actor: 'player', text: '', delay: 1 }, { actor: 'player', text: "where'd my map go?", delay: 3 }, { actor: 'player', text: '', delay: 1 }, { actor: 'player', text: "where'd junior go!?", delay: 3 }, { actor: 'player', text: '', delay: 1 }, { actor: 'player', text: "the boat to town leaves soon", delay: 3 }, { actor: 'player', text: '', delay: 1 }, { actor: 'player', text: "I'd better find junior quickly", delay: 3 }],
+    found: [{ actor: 'child', text: 'where have you been all night?!', delay: 3 }, { actor: 'player', text: "???", delay: 2 }, { actor: 'player', text: "all night?", delay: 3 }, { actor: 'child', text: "we're going to be late", delay: 3 }, { actor: 'player', text: "well let's get moving!", delay: 3 }, { actor: 'player', text: "hi ho, hi ho...", delay: 2 }, { actor: 'child', text: "no singing", delay: 3 }, { actor: 'player', text: "you're no fun", delay: 3 }],
+    exit: [{ actor: 'player', text: 'whew! we made it', delay: 3 }, { actor: 'child', text: 'my legs hurt', delay: 3 }, { actor: 'player', text: '...', delay: 1 }, { actor: 'player', text: 'lets get a move on', delay: 3 }]
+  }
 
-    // use for trying out maps
-    // state: {
-    //   map: 'drop1',
-    //   entrance: 'entrance_left',
-    //   equipped: 'flashlight',
-    //   items: null,
-    //   fires: null,
-    //   rescueTime: 0.0,
-    //   rescued: false,
-    //   deadTime: 999
-    // }
+  // use for trying out maps
+  // state: {
+  //   map: 'drop1',
+  //   entrance: 'entrance_left',
+  //   equipped: 'flashlight',
+  //   items: null,
+  //   fires: null,
+  //   rescueTime: 0.0,
+  //   rescued: false,
+  //   deadTime: 999
+  // }
 
-    // actual game-start
-    // state: {
-    //   map: 'island1',
-    //   entrance: 'game_start',
-    //   equipped: 'forage',
-    //   items: [
-    //     {
-    //       name: 'forage',
-    //     },
-    //     {
-    //       name: 'map',
-    //     },
-    //   ]
-    //   rescueTime: 0.0,
-    //   rescued: false,
-    //   deadTime: 999
-    // }
-  } };
+  // actual game-start
+  // state: {
+  //   map: 'island1',
+  //   entrance: 'game_start',
+  //   equipped: 'forage',
+  //   items: [
+  //     {
+  //       name: 'forage',
+  //     },
+  //     {
+  //       name: 'map',
+  //     },
+  //   ]
+  //   rescueTime: 0.0,
+  //   rescued: false,
+  //   deadTime: 999
+  // }
+};
 
 /***/ }),
 /* 23 */
@@ -4731,6 +4743,7 @@ var _class = function (_Phaser$Tilemap) {
       if (name == spriteLayerName) {
         _this.spriteLayer = _this.game.add.group();
       }
+      if (name == 'speed') _this.speed = layer;
       layer.visible = info.visible;
     }
     if (_this.spriteLayer == null) _this.spriteLayer = _this.game.add.group();
@@ -4946,7 +4959,7 @@ var _class = function (_Phaser$Sprite) {
     game.physics.arcade.enable(_this);
     _this.body.collideWorldBounds = true;
     var framenames = _phaser2.default.Animation.generateFrameNames('run/', 0, 7);
-    _this.animations.add('run', framenames, 10, true, false);
+    _this.run = _this.animations.add('run', framenames, 10, true, false);
     framenames = _phaser2.default.Animation.generateFrameNames('idle/', 0, 11);
     _this.animations.add('idle', framenames, 10, true, false);
     framenames = ['jump/jump.png'];
@@ -4956,6 +4969,7 @@ var _class = function (_Phaser$Sprite) {
     _this.anchor.setTo(0.5, 0.5);
     _this.game.scaleModel = _phaser2.default.ScaleManager.SHOW_ALL;
     _this.scale.setTo(_config2.default.player.scale);
+    _this.speed = 1.0;
     return _this;
   }
 
@@ -4970,8 +4984,13 @@ var _class = function (_Phaser$Sprite) {
         this.stopAnimation();
       }
 
+      if (!this.movingLR) this.stopLR();
+      if (!this.movingUD) this.stopUD();
+      this.movingLR = false;
+      this.movingUD = false;
+
       var dt = this.game.time.physicsElapsed;
-      var drag = 0.05;
+      var drag = 0.1;
       this.body.velocity.y -= vy * dt * drag;
       this.body.velocity.x -= vx * dt * drag;
     }
@@ -4981,13 +5000,14 @@ var _class = function (_Phaser$Sprite) {
       var dt = this.game.time.physicsElapsed;
       var accel = _config2.default.player.groundAccel;
       var vx = this.body.velocity.x - accel * dt;
-      if (vx < -_config2.default.player.targetSpeed) {
-        vx = -_config2.default.player.targetSpeed;
-      } else if (vx > -_config2.default.player.initialSpeed) {
-        vx = -_config2.default.player.initialSpeed;
+      if (vx < -_config2.default.player.targetSpeed * this.speed) {
+        vx = -_config2.default.player.targetSpeed * this.speed;
+      } else if (vx > -_config2.default.player.initialSpeed * this.speed) {
+        vx = -_config2.default.player.initialSpeed * this.speed;
       }
       this.body.velocity.x = vx;
-      this.scale.x = -_config2.default.player.scale;
+      if (this.scale.x > 0) this.scale.x = -this.scale.x;
+      this.movingLR = true;
     }
   }, {
     key: 'moveRight',
@@ -4995,13 +5015,14 @@ var _class = function (_Phaser$Sprite) {
       var dt = this.game.time.physicsElapsed;
       var accel = _config2.default.player.groundAccel;
       var vx = this.body.velocity.x + accel * dt;
-      if (vx > _config2.default.player.targetSpeed) {
-        vx = _config2.default.player.targetSpeed;
-      } else if (vx < _config2.default.player.initialSpeed) {
-        vx = _config2.default.player.initialSpeed;
+      if (vx > _config2.default.player.targetSpeed * this.speed) {
+        vx = _config2.default.player.targetSpeed * this.speed;
+      } else if (vx < _config2.default.player.initialSpeed * this.speed) {
+        vx = _config2.default.player.initialSpeed * this.speed;
       }
       this.body.velocity.x = vx;
-      this.scale.x = _config2.default.player.scale;
+      if (this.scale.x < 0) this.scale.x = -this.scale.x;
+      this.movingLR = true;
     }
   }, {
     key: 'moveDown',
@@ -5009,12 +5030,13 @@ var _class = function (_Phaser$Sprite) {
       var dt = this.game.time.physicsElapsed;
       var accel = _config2.default.player.groundAccel;
       var vy = this.body.velocity.y + accel * dt;
-      if (vy > _config2.default.player.targetSpeed) {
-        vy = _config2.default.player.targetSpeed;
-      } else if (vy < _config2.default.player.initialSpeed) {
-        vy = _config2.default.player.initialSpeed;
+      if (vy > _config2.default.player.targetSpeed * this.speed) {
+        vy = _config2.default.player.targetSpeed * this.speed;
+      } else if (vy < _config2.default.player.initialSpeed * this.speed) {
+        vy = _config2.default.player.initialSpeed * this.speed;
       }
       this.body.velocity.y = vy;
+      this.movingUD = true;
     }
   }, {
     key: 'moveUp',
@@ -5022,12 +5044,13 @@ var _class = function (_Phaser$Sprite) {
       var dt = this.game.time.physicsElapsed;
       var accel = _config2.default.player.groundAccel;
       var vy = this.body.velocity.y - accel * dt;
-      if (vy < -_config2.default.player.targetSpeed) {
-        vy = -_config2.default.player.targetSpeed;
-      } else if (vy > -_config2.default.player.initialSpeed) {
-        vy = -_config2.default.player.initialSpeed;
+      if (vy < -_config2.default.player.targetSpeed * this.speed) {
+        vy = -_config2.default.player.targetSpeed * this.speed;
+      } else if (vy > -_config2.default.player.initialSpeed * this.speed) {
+        vy = -_config2.default.player.initialSpeed * this.speed;
       }
       this.body.velocity.y = vy;
+      this.movingUD = true;
     }
   }, {
     key: 'stopLR',
@@ -5258,29 +5281,33 @@ var _class = function (_Phaser$State) {
   }, {
     key: 'create',
     value: function create() {
+      this.camera.flash('#000000', 1000);
+
       // constants
       this.worldMapTileSize = 64;
 
       this.game.physics.startSystem(_phaser2.default.Physics.ARCADE);
       this.game.time.advancedTiming = true;
 
-      if (_config2.default.state.new_game) this.resetGame();
+      this.exiting = false;
+      if (_config2.default.state.new_game) {
+        this.resetGame();
+        this.playIntro = true;
+      } else {
+        this.playIntro = false;
+      }
       this.loadMap();
-      this.loadPlayer();
-      this.initKeyboard();
-      this.initTooltip();
-
       if (_config2.default.state.new_tile) {
         this.spawnMapPiece();
         _config2.default.state.new_tile = false;
       }
       this.createWorldMap();
       this.spawnItems();
-      this.spawnMonsters();
+      this.loadPlayer();
+      this.initKeyboard();
+      this.initTooltip();
 
       this.emitterLayer = this.game.add.group();
-
-      this.drytimer = 0.0;
     }
   }, {
     key: 'initKeyboard',
@@ -5302,7 +5329,6 @@ var _class = function (_Phaser$State) {
       this.addToBag(bag, 't_u', 9);
       this.addToBag(bag, 'd_u', 4);
       this.shuffleArray(bag);
-      console.log(bag);
       _config2.default.state.tile_bag = bag;
     }
   }, {
@@ -5371,13 +5397,30 @@ var _class = function (_Phaser$State) {
       var entranceXY = this.getEntranceXY(_config2.default.state.entrance);
       this.player = new _Player2.default({
         game: this.game,
-        x: entranceXY[0],
+        x: entranceXY[0] + 16,
         y: entranceXY[1],
         asset: 'hero'
       });
       this.player.body.setSize(this.player.body.width * 0.75, this.player.body.height, 0, 0);
       this.map.spriteLayer.add(this.player);
       this.game.camera.follow(this.player);
+
+      // spawn the child if he is still following...
+      if (_config2.default.state.child_following) this.spawnChild(this.player.x, this.player.y + 32);
+    }
+  }, {
+    key: 'spawnChild',
+    value: function spawnChild(x, y) {
+      this.child = new _Player2.default({
+        game: this.game,
+        x: x,
+        y: y,
+        asset: 'hero'
+      });
+      this.child.width *= 0.75;
+      this.child.height *= 0.75;
+      this.child.body.setSize(this.child.body.width * 0.75, this.child.body.height * 0.5, 0, 0);
+      this.map.spriteLayer.add(this.child);
     }
   }, {
     key: 'spawnItems',
@@ -5389,6 +5432,30 @@ var _class = function (_Phaser$State) {
         if (obj.world[0] == _config2.default.state.world_location[0] && obj.world[1] == _config2.default.state.world_location[1]) this.addMapPiece(obj.local[0] * 32, obj.local[1] * 32);
       }
       this.updateEquippedMap();
+
+      // special case items
+      for (var i in this.map.objectMap) {
+        var obj = this.map.objectMap[i];
+        if (obj.type == 'cabin') {
+          console.log('adding house');
+          var s = new _phaser2.default.Sprite(this.game, obj.x, obj.y, "house");
+          s.anchor.x = 0.5;
+          s.anchor.y = 1.0;
+          this.map.spriteLayer.add(s);
+        }
+        if (obj.type == 'boat') {
+          this.boat = new _phaser2.default.Sprite(this.game, obj.x + obj.width / 2, obj.y + obj.height, "boat");
+          this.boat.anchor.x = 0.5;
+          this.boat.anchor.y = 1.0;
+          this.boat.scale.x = -1;
+          this.boatGroup = new _phaser2.default.Group(this.game);
+          this.boatGroup.add(this.boat);
+          this.map.spriteLayer.add(this.boatGroup);
+        }
+        if (obj.type == 'child' && !_config2.default.state.child_folowing) {
+          this.spawnChild(obj.x + obj.width / 2, obj.y + obj.height / 2);
+        }
+      }
     }
   }, {
     key: 'spawnMapPiece',
@@ -5397,15 +5464,18 @@ var _class = function (_Phaser$State) {
       for (var i in this.map.objectMap) {
         var obj = this.map.objectMap[i];
         if (obj.type == 'poi') {
-          var local = [obj.x / 32, obj.y / 32];
-          var world = [_config2.default.state.world_location[0], _config2.default.state.world_location[1]];
-          obj = { local: local, world: world };
-          _config2.default.state.world_map.push(obj);
-          console.log("spawned");
-          console.log(obj);
-          return true;
+          poi.push(obj);
         }
       }
+      this.shuffleArray(poi);
+      var obj = poi[0];
+      var local = [obj.x / 32, obj.y / 32];
+      var world = [_config2.default.state.world_location[0], _config2.default.state.world_location[1]];
+      obj = { local: local, world: world };
+      _config2.default.state.world_map.push(obj);
+      console.log("spawned");
+      console.log(obj);
+      return true;
     }
   }, {
     key: 'spawnMonsters',
@@ -5544,6 +5614,16 @@ var _class = function (_Phaser$State) {
     value: function trigger(x, y) {
       if (y.props.type == "exit") this.warp(y.props.name);
       if (y.props.type == "map") this.pickupItem(y);
+      if (y.props.type == "child") {
+        if (!_config2.default.state.child_following) this.playFound = true;
+        _config2.default.state.child_following = true;
+      }
+      if (y.props.type == "docks") {
+        this.docks = y;
+        if (_config2.default.state.child_following) this.exiting = true;else {
+          this.tooltip.text = "here's the boat, but where's junior?";
+        }
+      }
     }
   }, {
     key: 'warp',
@@ -5625,7 +5705,6 @@ var _class = function (_Phaser$State) {
           };
         }
       }
-      console.log(tile);
       return {
         enabled: false,
         message: "find the map piece first"
@@ -5640,19 +5719,56 @@ var _class = function (_Phaser$State) {
   }, {
     key: 'update',
     value: function update() {
+      var dt = this.game.time.physicsElapsed;
+      if (this.timer) this.timer -= dt;
+
       this.resetTooltip();
+      if (this.playIntro) if (this.playDialog(_config2.default.dialog.intro)) this.playIntro = false;
+      if (this.playFound) if (this.playDialog(_config2.default.dialog.found)) this.playFound = false;
+
       this.checkCollision();
       this.checkItems();
       this.checkTriggers();
       this.checkMonsters();
-      this.checkKeys();
+      if (!this.exiting) {
+        this.checkKeys();
+        this.updateChild();
+        this.updateSpeed();
+      } else {
+        this.checkExiting();
+      }
+    }
+  }, {
+    key: 'updateSpeed',
+    value: function updateSpeed() {
+      // get the tile we're under
+      var layer = this.map.speed;
+      var tiles = layer.getTiles(this.player.x, this.player.y, 5, 5);
+      switch (tiles[0].index) {
+        case 1:
+          this.player.speed = 0.1;
+          break;
+        case 2:
+          this.player.speed = 0.3;
+          break;
+        case 3:
+          this.player.speed = 1.0;
+          break;
+        default:
+          this.player.speed = 1.0;
+      }
     }
   }, {
     key: 'resetTooltip',
     value: function resetTooltip() {
       this.tooltip.text = '';
-      this.tooltip.x = this.player.x;
-      this.tooltip.y = this.player.y - 32;
+      if (this.tooltip.follow == 'child') {
+        this.tooltip.x = this.child.x;
+        this.tooltip.y = this.child.y - 32;
+      } else {
+        this.tooltip.x = this.player.x;
+        this.tooltip.y = this.player.y - 32;
+      }
     }
   }, {
     key: 'checkCollision',
@@ -5672,9 +5788,9 @@ var _class = function (_Phaser$State) {
   }, {
     key: 'checkKeys',
     value: function checkKeys() {
-      if (this.cursor.left.isDown) this.player.moveLeft();else if (this.cursor.right.isDown) this.player.moveRight();else this.player.stopLR();
+      if (this.cursor.left.isDown) this.player.moveLeft();else if (this.cursor.right.isDown) this.player.moveRight();
 
-      if (this.cursor.up.isDown) this.player.moveUp();else if (this.cursor.down.isDown) this.player.moveDown();else this.player.stopUD();
+      if (this.cursor.up.isDown) this.player.moveUp();else if (this.cursor.down.isDown) this.player.moveDown();
     }
   }, {
     key: 'onKey',
@@ -5682,6 +5798,14 @@ var _class = function (_Phaser$State) {
       if (x == 'm' || x == 'M') {
         if (this.mapVisible) this.hideMap();else this.showMap();
       } else if (x == 'r' || x == 'R') if (this.mapVisible) this.rotateMap();
+    }
+  }, {
+    key: 'updateChild',
+    value: function updateChild() {
+      if (this.child && _config2.default.state.child_following) {
+        var d = 2 * 32;
+        this.walkTo(this.child, this.player.x, this.player.y, d);
+      }
     }
   }, {
     key: 'checkMonsters',
@@ -5692,6 +5816,150 @@ var _class = function (_Phaser$State) {
         _this2.sfx.death.play();
         _this2.state.start("GameOver");
       }, null, this);
+    }
+  }, {
+    key: 'walkTo',
+    value: function walkTo(actor, x, y) {
+      var d = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 2 * 32;
+
+      var moving = false;
+      if (actor.x < x - d) {
+        actor.moveRight();
+        moving = true;
+      } else if (actor.x > x + d) {
+        actor.moveLeft();
+        moving = true;
+      }
+
+      if (actor.y < this.player.y - d) {
+        actor.moveDown();
+        moving = true;
+      } else if (actor.y > y + d) {
+        actor.moveUp();
+        moving = true;
+      }
+
+      var vx = actor.body.velocity.x;
+      var vy = actor.body.velocity.y;
+      if (vx < -1.0 || vx > 1.0 || vy < -1.0 || vy > 1.0) return true;else return moving;
+    }
+  }, {
+    key: 'checkExiting',
+    value: function checkExiting() {
+      if (this.exiting) {
+        if (!this.exitState) {
+          this.exitState = 1;
+          this.player.body.velocity.x = 0;
+          this.player.body.velocity.y = 0;
+          this.child.body.velocity.x = 0;
+          this.child.body.velocity.y = 0;
+        }
+
+        switch (this.exitState) {
+          case 1:
+            this.exitWalkToDocks();
+            break;
+          case 2:
+            this.exitShowDialog();
+            break;
+          case 3:
+            this.exitGetOnBoat();
+            break;
+          case 4:
+            this.exitRowRowRow();
+            this.exitFadeOut();
+            break;
+          case 6:
+            this.state.start("Credits");
+            break;
+        }
+      }
+    }
+  }, {
+    key: 'exitWalkToDocks',
+    value: function exitWalkToDocks() {
+      var w = this.docks.props.width;
+      var h = this.docks.props.height;
+      var x = this.docks.props.x + w / 2;
+      var y = this.docks.props.y + h / 2;
+      var moving = this.walkTo(this.player, x - w / 4, y, 1);
+      var moving2 = this.walkTo(this.child, x + w / 4, y, 1);
+      if (!moving && !moving2) {
+        this.exitState += 1;
+        this.player.moveRight();
+        this.child.moveLeft();
+      }
+    }
+  }, {
+    key: 'exitShowDialog',
+    value: function exitShowDialog() {
+      if (this.playDialog(_config2.default.dialog.exit)) this.exitState += 1;
+    }
+  }, {
+    key: 'playDialog',
+    value: function playDialog(dialog) {
+      if (!this.dialogIter) this.dialogIter = 0;
+      var frame = dialog[this.dialogIter];
+      if (this.delay(frame.delay)) {
+        this.dialogIter += 1;
+      } else {
+        this.tooltip.text = frame.text;
+        this.tooltip.follow = frame.actor;
+      }
+      if (this.dialogIter >= dialog.length) {
+        this.dialogIter = null;
+        return true;
+      }
+      return false;
+    }
+  }, {
+    key: 'exitGetOnBoat',
+    value: function exitGetOnBoat() {
+      var w = -this.boat.width;
+      var h = this.boat.height;
+      var x = this.boat.x;
+      var y = this.boat.y - h / 4;
+      var moving = this.walkTo(this.player, x - w / 4, y, 1);
+      var moving2 = this.walkTo(this.child, x + w / 4, y, 1);
+      if (!moving && !moving2 && this.delay(1)) {
+        this.exitState += 1;
+        this.player.moveLeft();
+        this.child.moveLeft();
+
+        var dx = x - this.player.x;
+        var dy = y - this.player.y;
+        //this.map.spriteLayer.remove(this.player);
+        //this.boatGroup.add(this.player);
+
+        var actors = [this.player, this.child, this.boat];
+        for (var i in actors) {
+          var actor = actors[i];
+          var tween = game.add.tween(actor).to({ x: '-600' }, 20000, 'Linear', true, 0);
+        }
+      }
+    }
+  }, {
+    key: 'exitRowRowRow',
+    value: function exitRowRowRow() {
+      this.exitState += 1;
+    }
+  }, {
+    key: 'exitFadeOut',
+    value: function exitFadeOut() {
+      this.camera.fade('#000000', 10000);
+      this.camera.onFadeComplete.add(this.exitComplete, this);
+    }
+  }, {
+    key: 'exitComplete',
+    value: function exitComplete() {
+      this.state.start("GameOver");
+    }
+  }, {
+    key: 'delay',
+    value: function delay(time) {
+      if (this.timer == null) this.timer = time;
+      if (this.timer <= 0.0) this.timer = null;
+      return this.timer == null;
     }
   }, {
     key: 'canPlaceTile',
@@ -5813,8 +6081,8 @@ var _class = function (_Phaser$State) {
   }, {
     key: 'create',
     value: function create() {
-      var txt = 'game over\nretry?';
-      this.text = this.add.text(this.game.width / 2.0, this.game.height / 2.0, txt, { font: '24px Belgrano', fill: '#aa0000', align: 'center' });
+      var txt = 'you win!';
+      this.text = this.add.text(this.game.width / 2.0, this.game.height / 2.0, txt, { font: '24px Belgrano', fill: '#aaaaaa', align: 'center' });
       this.text.alpha = 0.0;
       this.game.add.tween(this.text).to({ alpha: 1 }, 1000, "Linear", true);
       this.text.anchor.setTo(0.5, 0.5);
@@ -5895,9 +6163,12 @@ var _class = function (_Phaser$State) {
   }, {
     key: 'preload',
     value: function preload() {
-      this.loaderBg = this.add.sprite(this.game.world.centerX, this.game.world.centerY, 'loaderBg');
-      this.loaderBar = this.add.sprite(this.game.world.centerX, this.game.world.centerY, 'loaderBar');
-      (0, _utils.centerGameObjects)([this.loaderBg, this.loaderBar]);
+      this.loaderBg = this.add.sprite(this.game.world.centerX, this.game.height - 30, 'loaderBg');
+      this.loaderBar = this.add.sprite(this.game.world.centerX, this.game.height - 30, 'loaderBar');
+      this.loaderBg.anchor.x = 0.5;
+      this.loaderBg.anchor.y = 0.5;
+      this.loaderBar.anchor.x = 0.5;
+      this.loaderBar.anchor.y = 0.5;
 
       this.load.setPreloadSprite(this.loaderBar);
 
@@ -5924,10 +6195,40 @@ var _class = function (_Phaser$State) {
     }
   }, {
     key: 'create',
-    value: function create() {}
+    value: function create() {
+      // add the spinning world
+      var group = this.game.add.group();
+      this.world = new _phaser2.default.Sprite(this.game, this.game.width / 2, this.game.height / 2, "round_world");
+      this.world.anchor.x = 0.5;
+      this.world.anchor.y = 0.5;
+      group.add(this.world);
+
+      var tween = game.add.tween(this.world).to({ angle: '360' }, 30000, "Linear", true, 0, -1, false);
+
+      var style = {
+        font: 'bold 14px Belgrano',
+        fill: '#000',
+        align: 'center',
+        boundsAlignH: "center",
+        boundsAlignV: "middle"
+      };
+      this.text = this.add.text(this.game.world.centerX, this.game.height - 30, '[press any key]', style);
+      this.text.anchor.setTo(0.5, 0.5);
+      var tween = game.add.tween(this.text).to({ alpha: 0.0 }, 1000, "Linear", true, 0, -1, true);
+
+      //this.loaderBar.destroy();
+      var kbrd = this.game.input.keyboard;
+      kbrd.addCallbacks(this, null, null, this.onKey);
+    }
   }, {
     key: 'update',
     value: function update() {
+      // if (this.cache.isSoundDecoded)
+      //   this.state.start('Game')
+    }
+  }, {
+    key: 'onKey',
+    value: function onKey() {
       if (this.cache.isSoundDecoded) this.state.start('Game');
     }
   }]);
@@ -12312,7 +12613,7 @@ module.exports = __webpack_require__(/*! ./modules/_core */ 24);
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(/*! babel-polyfill */132);
-module.exports = __webpack_require__(/*! /Users/fredricdorothy/personal/games/trails/master/src/main.js */131);
+module.exports = __webpack_require__(/*! /Users/fredricdorothy/work/trails/master/src/main.js */131);
 
 
 /***/ })
